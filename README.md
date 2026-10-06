@@ -42,4 +42,4 @@ The browser needs no external scripts, tiles, fonts or network feeds. Python ser
 - `vendor/three/`: locally bundled Three.js 0.180.0 and OrbitControls, under the included MIT license.
 - `tests/engine.test.js`: hand-worked timing, deterministic resource checks for all four modes, background traffic, closures and horizon handling.
 
-The first demonstration is implemented. The GitHub repository is https://github.com/santiagoGrupoRiccitelli/bahia-blanca-simulation. No cloud deployment is configured.
+The first demonstration is implemented. The GitHub repository is https://github.com/GrupoRiccitelli/bahia-blanca-simulation. No cloud deployment is configured.
