@@ -4,6 +4,8 @@ import {loadBundle} from './source-data.js';
 import {sourceView,sourceExport} from './replay.js';
 import {sourceMotionView,sourceMotionExport,motionPlan} from './source-motion.js';
 import {syntheticView} from './synthetic-adapter.js';
+import {LUNA_LINDA,withLunaLinda} from './luna-linda.js';
+let lunaEnabled=false;
 let bundle=null;
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let motionEnabled=!reduceMotion;
@@ -58,6 +60,7 @@ $('reset').addEventListener('click',()=>{time=0;playing=false;lastFrame=null;upd
 $('scrub').addEventListener('input',e=>{time=Number(e.target.value);lastFrame=null;renderFrame()});
 $('export').addEventListener('click',()=>{
   const data=bundle?(motionEnabled?sourceMotionExport(bundle,time):sourceExport(bundle)):{format:'bahia-demo-run-v1',evidence:'illustrative assumptions',baseline,selectedRun:run};
+  if(bundle&&lunaEnabled)data.hypotheticalAdditionalVessels=[LUNA_LINDA];
   const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
   const a=document.createElement('a');a.href=url;a.download=bundle?`bahia-blanca-${motionEnabled?'movimientos-ilustrativos':'evidencia'}.json`:`bahia-blanca-${mode}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
@@ -67,7 +70,7 @@ renderMetrics();renderTimeline();renderFrame();requestAnimationFrame(frame);
 
 window.addEventListener('pagehide',()=>port?.dispose(),{once:true});
 
-function sourceDisplay(){return motionEnabled?sourceMotionView(bundle,time,selected):sourceView(bundle,time,selected);}
+function sourceDisplay(){const view=motionEnabled?sourceMotionView(bundle,time,selected):sourceView(bundle,time,selected);const result=lunaEnabled?withLunaLinda(view,motionEnabled):view;if(lunaEnabled&&selected===LUNA_LINDA.id)result.selected=LUNA_LINDA.id;return result;}
 function horizon(){return bundle?sourceDisplay().bounds.end:48;}
 function node(tag,text,className){const el=document.createElement(tag);if(text!=null)el.textContent=String(text);if(className)el.className=className;return el;}
 function listDetails(items){$('ship-details').replaceChildren(...items.flatMap(([k,v])=>[node('dt',k),node('dd',v??'No disponible')]));}
@@ -80,7 +83,9 @@ function renderSourceMetrics(){
  $('policy-note').textContent='El reloj recorre intenciones publicadas. Las posiciones del informe no cambian ni confirman movimientos. Zona horaria Argentina interpretada como supuesto.';
 }
 function renderSourceTimeline(){
- const view=sourceView(bundle,time,selected),plan=motionEnabled?motionPlan(bundle):null;$('timeline').replaceChildren();
+ $('timeline').replaceChildren();
+ if(lunaEnabled){const row=node('div',null,'source-plan-row'),follow=node('button','Seguir LUNA LINDA (hipotético)');follow.addEventListener('click',()=>select(LUNA_LINDA.id));row.append(follow,node('span','Escala agregada por el usuario · sin intención VTS publicada · inicio 1 h desde el origen de la agenda y entrada 45 min asumidos'));$('timeline').replaceChildren(row);}
+ const view=sourceView(bundle,time,selected),plan=motionEnabled?motionPlan(bundle):null;
  for(const row of view.timeline){const el=node('div',null,'source-plan-row');el.append(node('strong',row.name),node('span',`${row.details.direction} · ${row.details.terminal}`));
  for(const marker of row.markers){const m=node('span',`${marker.type==='planned_pilot_time'?'Práctico':'Remolcadores'}: ${sourceTime(marker.time)} · planificado`,'plan-marker');m.dataset.at=marker.at??'';m.dataset.end=marker.end??'';el.append(m);}
  const movement=plan?.movements.find(m=>m.intentionId===row.id);if(movement){const follow=node('button',`Seguir ${row.name}`);follow.addEventListener('click',()=>select(movement.entityId));el.append(follow,node('span',`Animación: ${movement.durationHours*60} min asumidos desde la hora prevista de remolcadores`));}
@@ -90,8 +95,9 @@ function renderSourceFrame(){
  const view=sourceDisplay();selected=view.selected;const instant=new Date(view.origin+view.time*3600000);
  $('clock').textContent=instant.toLocaleTimeString('es-AR',{timeZone:view.timezone,hour:'2-digit',minute:'2-digit',hour12:false});$('date').textContent=instant.toLocaleDateString('es-AR',{timeZone:view.timezone});$('elapsed').textContent=`${motionEnabled?'Animación':'Hitos'}: ${format(view.time)} / ${format(view.bounds.end)} h`;$('scrub').value=view.time;
  $('scene-activity').textContent=motionEnabled?'Movimiento ilustrativo según planes · rutas y duraciones asumidas · sin confirmación real':`Posiciones publicadas · ${bundle.report_date} · hora de observación desconocida. Ubicaciones ilustrativas, independientes del reloj.`;port?.update(view);
- const entity=view.entities.find(e=>e.id===selected);$('ship-name').textContent=entity?.name??'Sin posición dentro del alcance';$('ship-state').textContent=entity?.state?.startsWith('illustrative-')?({'illustrative-entrada':'Entrada ilustrativa · no confirmada','illustrative-zarpada':'Salida ilustrativa · no confirmada','illustrative-alongside':'Al costado supuesto después de entrada','illustrative-offscene':'Fuera de escena tras salida supuesta · posición real desconocida'})[entity.state]:entity?.state==='reported-alongside'?'Publicado al costado del muelle (sin estado de carga inferido)':entity?.state==='reported-anchorage'?'Publicado en rada':'Ubicación desconocida';
+ const entity=view.entities.find(e=>e.id===selected);$('ship-name').textContent=entity?.name??'Sin posición dentro del alcance';$('ship-state').textContent=entity?.state?.startsWith('illustrative-')?({'illustrative-hypothetical-anchorage':'Rada hipotética · sin posición AIS confirmada','illustrative-entrada':'Entrada ilustrativa · no confirmada','illustrative-zarpada':'Salida ilustrativa · no confirmada','illustrative-alongside':'Al costado supuesto después de entrada','illustrative-offscene':'Fuera de escena tras salida supuesta · posición real desconocida'})[entity.state]:entity?.state==='reported-alongside'?'Publicado al costado del muelle (sin estado de carga inferido)':entity?.state==='reported-anchorage'?'Publicado en rada':'Ubicación desconocida';
  const d=entity?.details??{};listDetails([['Terminal',d.terminal],['Eslora',d.length_m==null?'No disponible · casco genérico ilustrativo':`${d.length_m} m`],['Manga',d.beam_m==null?'No disponible · proporción visual asumida':`${d.beam_m} m`],['Carga',d.cargo],['Tonelaje publicado',d.tonnage],['Llegada publicada',sourceTime(d.arrival_time)],['Procedencia',`Informe ${bundle.report_date} · ${(d.assertion_ids??[]).length} campos documentados; detalle completo en Fuentes y afirmaciones.`]]);
+ if(d.hypothetical){$('ship-state').textContent='Escala hipotética · '+$('ship-state').textContent;listDetails([['IMO (ficha pública)',LUNA_LINDA.imo],['Tipo de buque',LUNA_LINDA.type],['Dimensiones (ficha pública)','138 × 26 m'],['Ubicación','Rada y muelle hipotéticos · no posición AIS'],['Horario supuesto','Inicio: 1 h desde el origen de la agenda · entrada de 45 min'],['Carga / recursos','No modelados'],['Fuente',LUNA_LINDA.source],['Identidad del enlace','Coincidencia por nombre; shipid de MarineTraffic sin verificar'],['Supuestos',LUNA_LINDA.assumptions.join(' ')]]);}
  if(entity?.movement){const m=entity.movement;listDetails([...Array.from($('ship-details').children).reduce((acc,e,i,els)=>i%2?acc:[...acc,[e.textContent,els[i+1].textContent]],[]),['Movimiento ilustrativo',`${m.direction} · inicio ${new Date(view.origin+m.start*3600000).toLocaleTimeString('es-AR',{timeZone:view.timezone,hour:'2-digit',minute:'2-digit'})} · duración asumida ${m.durationHours*60} min`]]);}
  if(entity){const provenance=node('details',null,'selected-provenance');provenance.append(node('summary','Ver procedencia por campo'));for(const id of d.assertion_ids??[]){const a=bundle.assertions.find(item=>item.id===id);if(a)provenance.append(node('p',`${a.field??a.event_type??id}: ${a.source_id} · página ${a.page??'?'} · fila ${a.row??a.row_reference??'?'}`));}const provenanceRow=node('dd');provenanceRow.append(provenance);$('ship-details').append(node('dt','Detalle de fuentes'),provenanceRow);}
  document.querySelectorAll('.plan-marker').forEach(m=>{const at=m.dataset.at===''?null:Number(m.dataset.at),end=m.dataset.end===''?at:Number(m.dataset.end);m.classList.toggle('highlighted',at!==null&&view.time>=at&&view.time<=(end??at)+.05);});
@@ -108,7 +114,7 @@ function switchDataset(){$('speed').value=bundle?'0.1':'2';playing=false;lastFra
  renderMetrics();renderTimeline();renderFrame();if(bundle)renderMotionControls();}
 $('source-file').addEventListener('change',e=>{if(e.target.files[0])activateSource(e.target.files[0]);e.target.value='';});
 $('load-local').addEventListener('click',()=>activateSource('/data/normalized/bahia-2026-10-06.json'));
-$('synthetic-mode').addEventListener('click',()=>{bundle=null;switchDataset();$('load-status').textContent='Demostración sintética activa.';});
+$('synthetic-mode').addEventListener('click',()=>{lunaEnabled=false;updateLunaButton();bundle=null;switchDataset();$('load-status').textContent='Demostración sintética activa.';});
 
 function renderMotionControls(){
  const plan=motionPlan(bundle);$('motion-decisions').replaceChildren(...[
@@ -120,3 +126,6 @@ function renderMotionControls(){
  $('policy-note').textContent=motionEnabled?'Movimiento ilustrativo: inicio tomado del horario previsto de remolcadores, entrada 45 min y salida 30 min asumidas. Sin métricas de desempeño real. Zona horaria Argentina asumida.':'El reloj recorre intenciones publicadas. Las posiciones del informe no cambian ni confirman movimientos. Zona horaria Argentina interpretada como supuesto.';
 }
 $('animate-source').addEventListener('change',e=>{motionEnabled=e.target.checked;playing=false;lastFrame=null;time=Math.min(time,horizon());$('scrub').max=horizon();updatePlay();renderMotionControls();renderTimeline();renderFrame();});
+
+function updateLunaButton(){$('luna-linda').textContent=lunaEnabled?'Quitar Luna Linda (hipotético)':'Agregar Luna Linda (hipotético)';$('luna-linda').setAttribute('aria-pressed',String(lunaEnabled));}
+$('luna-linda').addEventListener('click',async()=>{if(!bundle){try{bundle=await loadBundle('/data/normalized/bahia-2026-10-06.json');switchDataset();}catch(error){$('load-status').textContent='Error: '+error.message;return;}}lunaEnabled=!lunaEnabled;updateLunaButton();selected=lunaEnabled?LUNA_LINDA.id:null;renderTimeline();renderFrame();$('load-status').textContent=lunaEnabled?'Luna Linda agregada como escala hipotética. No pertenece al informe ni confirma una visita a Bahía Blanca.':'Escala hipotética de Luna Linda eliminada.';});

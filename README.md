@@ -67,3 +67,5 @@ The browser needs no external scripts, tiles, fonts or network feeds. Python ser
 - `tests/test_*.py`: pipeline failure fixtures and deterministic assembly checks.
 
 The first demonstration is implemented. The GitHub repository is https://github.com/GrupoRiccitelli/bahia-blanca-simulation. No cloud deployment is configured.
+
+Use **Agregar Luna Linda (hipotético)** to add an optional vessel to the source viewer. Public particulars for the name LUNA LINDA are IMO 9792369 and 138 × 26 m ([VesselFinder](https://www.vesselfinder.com/vessels/details/9792369), checked 2026-10-06). The supplied MarineTraffic shipid could not be verified directly. The anchorage, berth and arrival one hour after the agenda origin are hypothetical; the vessel is not added to official observations, VTS intentions or source counts. The export records it separately under `hypotheticalAdditionalVessels`. Remove it with the same button. A reviewed source bundle must be imported or available locally.

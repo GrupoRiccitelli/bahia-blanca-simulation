@@ -5,7 +5,7 @@
 <header><div class="brand"><span class="brand-icon">≋</span><div><strong>Grupo Riccitelli</strong><span>Laboratorio de operaciones</span></div></div><span class="demo-label">Demostración con datos ilustrativos</span></header>
 <main>
   <section class="intro"><div><h1>Un día en el puerto.<br><span>Y lo que pasa después.</span></h1><p>Bahía Blanca / Ingeniero White · Escenario de 48 horas</p></div><div class="intro-note">Cada buque necesita un muelle libre, paso por el canal y remolcadores disponibles. Cambiá una condición y observá cómo se reorganiza el puerto.</div></section>
-  <section class="dataset-controls" aria-label="Seleccionar datos"><button id="synthetic-mode">Demostración sintética</button><label>Importar paquete revisado <input id="source-file" type="file" accept=".json,application/json"></label><button id="load-local">Cargar paquete local del 06-10-2026</button><p id="load-status" role="status">Demostración sintética activa. Los datos reales requieren un paquete revisado.</p></section>
+  <section class="dataset-controls" aria-label="Seleccionar datos"><button id="synthetic-mode">Demostración sintética</button><label>Importar paquete revisado <input id="source-file" type="file" accept=".json,application/json"></label><button id="luna-linda" type="button" aria-pressed="false">Agregar Luna Linda (hipotético)</button><button id="load-local">Cargar paquete local del 06-10-2026</button><p id="load-status" role="status">Demostración sintética activa. Los datos reales requieren un paquete revisado.</p></section>
   <section id="motion-controls" class="motion-controls" hidden><label><input id="animate-source" type="checkbox" checked> Animar movimientos previstos</label><p>Rutas ilustrativas · Entrada 45 min / salida 30 min asumidas · Desmarcá para ver las posiciones publicadas.</p><details><summary>Cómo se construye el movimiento</summary><p>La hora prevista de remolcadores se usa como inicio supuesto de maniobra. El origen de la agenda es una referencia visual, no la hora de observación del informe. Los vínculos se hacen por nombre exacto, terminal y estado compatible. No son rutas AIS ni eventos confirmados.</p><ul id="motion-decisions"></ul></details></section>
   <section class="workspace">
     <div class="main-view">
@@ -26,5 +26,5 @@
   <section class="timeline-section"><div class="section-heading"><div><h2>La agenda de cada buque</h2><p>Elegí un buque para seguirlo en el puerto.</p></div><div class="timeline-legend"><span class="waiting-key">Espera</span><span class="transit-key">Maniobra</span><span class="handling-key">Carga</span><span class="departure-key">Espera de salida</span></div></div><div id="timeline" class="timeline"></div></section>
   <section id="source-context" hidden></section>
   <footer><p>Primera simulación operativa · Terminales ADM, TBB 9 y Cargill · Distribución y rutas ilustrativas en una escena 3D.</p><p>Los resultados muestran el comportamiento del modelo bajo los supuestos elegidos.</p></footer>
-</main><script type="module" src="/src/app.js"></script>
+</main><script type="module" src="/src/app.js?v=0.2.1"></script>
 </body></html>
