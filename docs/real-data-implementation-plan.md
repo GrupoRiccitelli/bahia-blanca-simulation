@@ -1,10 +1,10 @@
 # Real-data Bahía Blanca implementation plan
 
-Audit date: 2026-10-06. Decision: proceed with a source-backed snapshot and planned-movement visualization. A complete historical actual-event replay is not yet supported by the verified public sources. This document supersedes the acquisition and architecture sequence in the original implementation plan for the next release. The existing synthetic demo remains available as a separate scenario.
+Audit date: 2026-10-06. Revised after [Astra’s audit](real-data-plan-audit.md). Decision: proceed with a source-backed snapshot and planned-movement visualization. A complete historical actual-event replay is not yet supported by the verified public sources. This document supersedes the acquisition and architecture sequence in the original implementation plan for the next release. The existing synthetic demo remains available as a separate scenario.
 
 ## 1. What we can honestly build
 
-The first release will reconstruct a published port snapshot, show real vessel dimensions where available, and animate published movement intentions with explicit interpolation. It must be titled “Operación publicada + movimientos previstos,” not “historical actual replay.” A separate what-if run can start from that evidence and simulate the unobserved future. Neither view may claim measured loading progress or measured navigation tracks.
+The first release will show a report-dated observation board with an unknown observation cutoff, real vessel dimensions where available, and a separate timeline of published movement intentions. Continuous route animation is a later increment requiring the explicit assumptions and gates below. It must be titled “Operación publicada + movimientos previstos,” not “historical actual replay.” A separate what-if run can start from that evidence and simulate the unobserved future. Neither view may claim measured loading progress or measured navigation tracks.
 
 Three tiers have different data gates:
 
@@ -41,7 +41,7 @@ Search-indexed versions differ in dates from direct downloads. Retrieval time, d
 |---|---|---|---|
 | Vessel identity | Published names, flags, dimensions | No verified IMO/MMSI/call IDs | Internal source-scoped IDs; review aliases; name alone cannot join long history |
 | Initial berth occupancy | Named berth and reported docking timestamp | Exact snapshot issue time; shift history | Show source-dated state, preserve uncertainty |
-| Anchorage waiting | Arrival timestamps and anchorage labels | Full subsequent history and berth-ready time | Initial wait age can be shown; final wait cannot be measured yet |
+| Anchorage waiting | Arrival timestamps and anchorage labels | Full subsequent history and berth-ready time | Exact current wait age unavailable; only bounds or an estimate at an explicit assumed reference instant |
 | Future arrivals | Announced dates | Time of day, cancellations/revisions | Date intervals; no fabricated midnight timestamps |
 | Movement intent | Pilot and tug times, direction, terminal | Actual maneuver start/end, confirmation | Retain separate planned event types |
 | Berth departures | Planned departures only in checked day | Actual berth release/port exit | No measured completed-call turnaround |
@@ -61,19 +61,31 @@ Monitor's asset certificate mismatch prevents confirming its historical export. 
 3. Daily-report movement prose and VTS tug times differ. Retain both assertions with their event types and source versions; do not overwrite one with the other or collapse them into a single exact berth-arrival time.
 4. Multiple planned movements share a timestamp. The demo's single channel lock across an entire maneuver cannot reproduce that plan. Replay must display source events without enforcing synthetic scheduling; operational what-if constraints require a separate, validated model.
 5. The VTS names more tugs than the synthetic three-tug fleet. Named assignments do not establish full-day availability. The simple length-to-tug-count rule must not override reported assignments in evidence playback.
-6. One candidate name differs between reports (`C FORCE I` versus `C FORCE`). Treat it as an alias candidate requiring review, not automatic fuzzy matching.
+6. Both frozen PDFs say `C FORCE`; the earlier `C FORCE I` discrepancy was unsupported and is corrected here. Alias review still applies to terminal names, shortened tug labels and future reports.
 7. A departure at another terminal appears in VTS. It cannot be discarded when modeling shared resources. Retain all seven plan rows even if only three terminals receive detailed 3D geometry.
 8. A blank berth row or absence of a vessel from a later PDF is not proof of a precise departure event. Changes between snapshots establish observation intervals at best.
 
-## 5. Data contract
+## 5. Temporal and milestone policy
+
+The observation board represents assertions in the dated position report, not the port at midnight, the VTS issue time, 07:59, or retrieval time. Its heading is “Posiciones publicadas · 06-10-2026 · hora de observación desconocida.” Keep report placement separate from time playback. No clock advancement confirms a plan or establishes a vessel’s later location.
+
+The plan timeline spans the earliest to latest published milestone in the selected bundle; it is not fixed at 48 hours. Two pilot milestones at 06:30 precede the VTS issue at 06:58:33; position observations include a 07:59 arrival. Preserve all three facts without inventing a common cutoff. Source event time, observation validity bounds (nullable), issue time and retrieval time are distinct.
+
+In the first release, seeking highlights planned markers and leaves the report board explicitly report-dated. Do not describe its placements as current at the seek time. A later animated overlay must declare an assumed origin, transition endpoints and duration, keep the observation layer intact, and show unknown post-event location/end-of-coverage state. Reset and backward seek reconstruct the same overlay deterministically.
+
+Each VTS row is a movement intention with direction, terminal, typed pilot and tug milestones. `ENTRADA`/`ZARPADA` do not convert those column times into berth arrival, berth release or port exit. Daily-report prose is a separate assertion. Versioned review decisions may link assertions but must retain their original meanings and unresolved differences. No duplicate maneuvers or silent preferred timestamp. Unknown tug durations cannot establish an actual assignment conflict. Simultaneous intentions remain simultaneous.
+
+Gate examples: 06:30, 06:58:33, 07:59 and 08:30; backwards seeking; absent future confirmation; coverage end; no calculated exact observed wait age. Any reference-instant estimate must be labeled assumed, with its inputs and bounds.
+
+## 6. Data contract
 
 Use a source assertion layer before a scenario layer. Each field/event stores source snapshot SHA-256, page, section, row/coordinate reference, original text, parsed value, units, precision and quality warnings. Separate:
 
 - `evidence`: reported / derived / assumed / simulated.
 - `status`: observation / planned / confirmed_actual / unknown.
-- `event_type`: anchorage_arrival / berth_arrival / pilot_boarding / tug_service / berth_departure / port_exit, with source wording preserved.
+- `event_type`: reported_anchorage_arrival / reported_berth_arrival / planned_pilot_time / planned_tug_time / movement_intention / narrative_intention; confirmed actual berth departure/port exit types require later evidence. Preserve source wording and direction separately.
 - `time`: original local string, date or datetime precision, earliest/latest bounds, timezone and timezone evidence.
-- `observed_at` and `issued_at`: nullable; retrieval time never substitutes for either.
+- `observed_at`, `observation_validity_bounds` and `issued_at`: nullable; retrieval time never substitutes for any of them.
 
 Names, terminals and tugs use explicit versioned alias tables. Decimal commas and thousands periods require column-specific parsing. Cargo tonnage is not automatically remaining cargo. Conflicting dimensions stay as separate measurements with a documented display preference; hull identity is not inferred from rounded length.
 
@@ -81,7 +93,7 @@ Scenario bundle: schema version, scenario kind, source fingerprints, coverage in
 
 Normalize to UTC only with an explicit timezone interpretation. Use Argentina time in the UI, with a visible assumed-timezone flag until publisher semantics are confirmed. Date-only announcements remain full-day intervals.
 
-## 6. Implementation using the existing project
+## 7. Implementation using the existing project
 
 Retain the current static frontend, JavaScript engine and locally bundled Three.js. Add Python only for offline acquisition/PDF normalization; no backend service, React rewrite, database or RL integration is needed for the first real-data release.
 
@@ -92,68 +104,112 @@ scripts/fetch_sources.py       # implemented starter: bounded manual HTTPS fetch
 scripts/normalize_reports.py  # PDF section/column parsers and review output
 schemas/source-bundle.json    # evidence and event contract
 src/source-data.js            # bundle validation and loading
-src/replay.js                 # observation/plan playback independent of scheduler
+src/view-state.js             # renderer-neutral presentation contract
+src/synthetic-adapter.js      # synthetic engine output -> presentation state
+src/replay.js                 # report board / plan markers -> presentation state
+scripts/validate_bundle.py    # hash, schema, reference and coverage checks
+scripts/assemble_bundle.py    # deterministic reviewed bundle assembly
 scenarios/                    # approved manifests/assumptions; source-derived bundles local initially
- tests/fixtures/              # small constructed PDF/text cases, no full raw report redistribution
- data/raw/                    # immutable snapshots, ignored
- data/normalized/             # normalized assertions, ignored
+tests/fixtures/              # small constructed PDF/text cases, no full raw report redistribution
+data/raw/                    # immutable snapshots, ignored
+data/normalized/             # normalized assertions, ignored
 ```
 
-`fetch_sources.py` stores each fetch in a fresh timestamped directory, verifies PDF MIME and magic bytes, caps responses at 10 MiB, uses certificate validation and a 25-second timeout, and returns failure if any required source fails. It records missing issue/timezone metadata rather than inventing values. This is manual acquisition, not a recurring collection service.
+`fetch_sources.py` stores each fetch in a fresh timestamped directory, verifies PDF MIME and magic bytes, caps responses at 10 MiB, uses certificate validation and a 25-second socket-operation timeout (not a hard total runtime deadline), and returns failure if any required source fails. It records missing issue/timezone metadata rather than inventing values. This is manual acquisition, not a recurring collection service.
 
-## 7. Ordered work and acceptance gates
+### Presentation contract and mode isolation
 
-### A. Acquire and normalize (estimate: 1–2 working days)
+`app.js` and `port3d.js` currently consume synthetic jobs directly. Refactor them to consume a renderer-neutral view state before adding source data. The contract includes dataset/mode ID, arbitrary stable entity IDs, optional measured dimensions, display state and evidence status, nullable/interval milestones, pose provenance, dynamic time bounds, selected entity and metric eligibility.
 
-- Fetch frozen reports and keep manifests; parse position pages 1–3 and all VTS rows by section and column coordinates.
-- Extract issue/date fields, maintain all external movements, report unparsed rows and alias candidates.
-- Build a per-field coverage report; review every row used in the three-terminal scenario against rendered source.
-- Test multiword names, decimal formats, blank dates, continuation rows, changing layouts, stale reports and HTML returned as a PDF.
+States include reported-alongside, reported-anchorage, planned milestone and unknown. Reported-alongside must not become active loading or departure-ready. Missing beam may use an explicitly assumed visual proportion; missing length uses a marked generic hull. The renderer must reconcile removed/new entities and changed dimensions, dispose obsolete meshes/labels, and clear invalid selection on dataset switch. Source mode has textual named tug assignments initially, not the three synthetic tug models.
 
-Gate: zero silent row loss in the selected scope; all seven audited VTS rows retained; source-backed fields have page/row references; missing dates stay missing. Parser failures stop scenario assembly.
+Make titles, legends, clock bounds, controls, assumptions, exports, metrics and empty states mode-specific. Disruptions remain disabled in source mode. Insert source strings as text, not unescaped `innerHTML`. WebGL failure must leave provenance and timeline usable. Source exports contain no synthetic baseline.
 
-### B. Publish a source-backed snapshot viewer (estimate: 1 working day)
+### Scope and coverage inventory
 
-- Add a data selector: synthetic demo versus published snapshot.
-- Real names, berth positions, published lengths/cargo and initial waiting observations replace fictional inputs only in the selected mode.
-- Add provenance, report dates, retrieval dates, coverage warning, uncertainty and planned/observed badges in Spanish.
-- Keep ships without complete movement events in their observed state; do not invent departures to fill 48 hours.
+Display the three occupied ADM/TBB 9/Cargill vessels and the five anchorage vessels assigned to those terminals in the detailed scene. Keep all eleven anchorage rows and all eight occupied main-table rows in the evidence inventory; the remaining rows appear as outside-scope context rather than disappearing. Retain all seven VTS intentions, including OTA 2, and all announcements/repair narratives as parsed records or retained-unparsed context. Geography remains illustrative.
 
-Gate: the visual snapshot matches reviewed source rows; selecting any displayed field reveals its evidence; synthetic metrics are absent in source-only mode.
+Every section/row gets a disposition: parsed, retained-unparsed, excluded-with-reason, plus review status. Totals and blank berth rows are accounted for separately from vessel calls. Expected counts are fixtures tied to the audited hashes, not permanent assumptions about future reports.
 
-### C. Animate published plans (estimate: 1–2 working days)
+Fixtures must cover undated AURIGA STAR/OSSA, AS SILJE’s four dates and differing lengths, `200-200` container quantities, suspicious `1/9/2206`, and unresolved `STIO 2-3/TBB 9`. Never forward-fill dates, deduplicate calls by name, silently correct suspect dates, or convert uncertain quantities to tonnes. Vessel ID, source-row ID and candidate call ID are distinct.
 
-- Add a replay adapter for source events, separate from `simulate()`.
-- Preserve pilot/tug/departure milestones. Illustrative route transitions require an assumption interval and separate styling; ambiguous times remain timeline annotations rather than forced paths.
-- Show movements beyond modeled terminals as context; do not enforce synthetic channel serialization on source plans.
-- Disable disruption controls in replay; expose a distinct “create modeled scenario” workflow later.
+### Reproducible acquisition to reviewed assembly
 
-Gate: playback and seeking preserve source status/uncertainty; no planned event becomes actual; no complete turnaround, utilization or loading-rate metrics appear without sufficient observations.
+The following is the target CLI workflow; only fetch currently exists:
 
-### D. Unlock actual history (external dependency; duration unknown)
+```bash
+python3 scripts/fetch_sources.py
+python3 scripts/normalize_reports.py --manifest <snapshot/manifest.json> --output <normalized-folder>
+python3 scripts/validate_bundle.py --input <normalized-folder> --review <review.json>
+python3 scripts/assemble_bundle.py --input <normalized-folder> --review <review.json> --output <bundle.json>
+```
 
-- Recheck the public Monitor interface when available, or obtain a small completed-call export directly from the port.
-- Ask for 7–14 days first, including the day selected for playback: call IDs, vessel identities, anchorage and berth arrivals, berth departures and port exits, shifts, timestamp definitions/timezone, coverage and reuse terms.
-- Request handling start/end and tug-service logs separately for later modeling. Do not wait for those to build actual berth-event replay if core records suffice.
-- Require actual arrival/departure timestamps for every completed call used in replay. Keep unfinished/carry-in jobs and interval observations explicit.
+Use Poppler for text/coordinate extraction and PDF rendering; record its version, Python version and parser version. Document installation prerequisites separately from the existing Python-only fetch command. Avoid adding further parser dependencies unless representative layouts require them.
 
-Gate: a selected continuous period is supported by confirmed actual events, all gaps counted, and future knowledge is used only in replay. No outreach has been sent.
+A versioned review file records reviewer state, aliases, linked intentions, overrides, reasons, scope and assumptions. Preserve the original assertions; superseding reviews produce new versions. Require both source snapshots, no required-source errors, verified saved-byte hashes and completed review of scene records before assembly. An incomplete fetch manifest cannot produce a release bundle.
 
-### E. Add evidence-initialized what-if simulation (estimate: 2–4 working days after suitable inputs)
+Assembly produces a deterministic bundle hash covering normalized assertions, parser version, schema, alias/review versions, scope and assumptions. Report-date mismatches block assembly pending an explicit reconciliation decision. Freshness is measured against a declared use/reference date, not HTTP success; a historical bundle remains valid as historical, while its current-data label is prohibited. Unknown cutoff is always visible.
 
-- Extend engine for occupied initial berths, negative historical arrivals, unknown remaining service, terminal compatibility and source-backed tug assignments where meaningful.
-- Define remaining-service distributions/ranges, channel segmentation and tug availability explicitly; run sensitivity scenarios before claiming operational effects.
-- Metrics use observed or modeled denominators consistently; exclude unobserved elapsed portions visibly rather than producing misleading full-call averages.
-- Keep historical replay separate from a forecast initialized at a declared cutoff. Future actual departures cannot be used to drive forecast service times or evaluate on the calibration set.
+The browser loads a local JSON file chosen by the user, avoiding mandatory commits of ignored datasets. Loader validates supported schema version, required sections, IDs, references, numeric bounds, time intervals, metric eligibility and required-source manifest status. Acquisition/assembly validates raw hashes; a locally imported bundle is structurally validated and marked as locally reviewed, not cryptographically authenticated by the publisher. Exports preserve provenance and review/bundle hashes. Missing files or invalid data show actionable errors without synthetic substitution.
 
-Gate: hand-worked carry-in/resource cases pass; replay matches evidence; what-if assumptions inspectable; predictive claims require held-out historical error measurements and operator review.
+## 8. Ordered work and acceptance gates
 
-A–C estimate: 3–5 working days for a source-backed snapshot/plan viewer, assuming stable layouts. This is not an estimate for obtaining historical access or a validated predictive simulator.
+### A. Schema, normalization and reconciliation (1.5–2 working days)
 
-## 8. Definition of done for the next release
+Implement evidence/time contracts, source hash checks, section coverage, normalization and reviewed-assembly commands against frozen bytes. Review every displayed row against rendered PDFs. Document dependencies and review workflow.
 
-The user can open the current viewer, choose a real published dataset, see real vessels at the three terminals and anchorage, inspect source facts and planned events, and replay only the supported milestones. Every interpolation/assumption is visible, missing future outcomes remain unknown, and the synthetic example is separately labeled. A later actual-history bundle uses the same evidence contract without relabeling plans as truth.
+Gate: all seven audited VTS rows survive; full section inventory reconciles; missing/uncertain fields remain explicit; incomplete manifests, corrupt PDFs, HTML responses, suspect dates and unsupported layouts cannot silently assemble a bundle. Temporal examples in section 5 pass.
 
-## 9. Next concrete task
+### B. Renderer/UI separation and observation board (1.5–2 working days)
 
-Implement `normalize_reports.py` and the evidence schema against the frozen audit PDFs, then ship the snapshot mode before animation. Do not start by feeding extracted rows into `createScenario()`: its empty-start assumptions and invented service durations would turn real names into misleading synthetic outcomes.
+Implement the shared display contract, synthetic adapter, source loader and source-only observation board. Show report dates, unknown cutoff, dimensions/cargo and provenance in Spanish. Keep synthetic demo behavior in its own adapter.
+
+Gate: synthetic → source → synthetic switches remove stale objects, hull dimensions, selections, metrics and assumptions. Test string IDs, missing length/beam/time, absent selection, missing bundle, unknown schema, broken references, invalid bounds and WebGL fallback. Source text is escaped; source exports contain provenance and no synthetic results.
+
+### C. Published milestone timeline (1–2 working days)
+
+Display linked intentions and typed milestones independently of reported placements. Dynamic time bounds derive from the bundle. Ambiguous/unmatched assertions remain inspectable; simultaneous plans are preserved. Play/seek highlights markers without implying completion.
+
+Gate: deterministic repeated/backward seeking and coverage-end behavior; no pilot/tug timestamp creates an observed berth transition, service duration or port exit. Optional continuous animation is deferred until its explicit assumed endpoint/origin/duration contract meets the section 5 gates; it is not needed for this release.
+
+### Integration and QA (1–2 working days)
+
+Run parser failure fixtures, deterministic assembly/hash checks, row-by-row source review, mode-switch/export tests and narrow/desktop visual verification. Document every residual issue and confirm metric allowlists. Planning allowance for A–C plus QA: **5–8 working days for one developer**, based on Astra’s judgment, stable frozen layouts and a milestone viewer. This is not a commitment, an estimate for historical access, or a validated predictor.
+
+### D. Obtain actual history (external dependency; duration unknown)
+
+Recheck Monitor when accessible or request a 7–14-day completed-call sample from the port. Needed: call IDs, vessel identifiers, actual anchorage/berth arrivals, berth departures/port exits, shifts, timezone definitions, coverage and reuse terms. Request handling/tug logs separately. No outreach or recurring collection is currently configured.
+
+Gate: continuous selected period has confirmed actual events for completed calls, explicit missing/carry-in/unfinished cases, and documented identities/time semantics. Observed changes alone establish bounded transition intervals, never invented precise events.
+
+### E1. Assumption-driven what-if prototype (2–4 working days after suitable reviewed inputs)
+
+Extend the engine with occupied initial berths, pre-origin arrivals, reservations, terminal compatibility, unfinished calls and explicitly assumed remaining-service ranges/resource constraints. Initial observed occupancy is separate from modeled service. Named assignments apply only where their modeled meaning is defined. Test initial resource conflicts, censoring and sensitivity to assumptions. This estimate covers a narrow demonstration, not calibration or validated channel/tug rules.
+
+Gate: hand-worked carry-in/resource/compatibility cases pass; assumption changes and their effects are inspectable; all outputs labeled modeled. Unknown inputs cannot silently become observed rates or availability.
+
+### E2. Calibrated prediction (separate scope; estimate after history review)
+
+Require actual history, resource and closure coverage, operator-reviewed rules and calibration/evaluation periods. Enforce a forecast cutoff: future observations cannot initialize remaining service or supply forecast outcomes. Validate against held-out actual events and report errors/censoring before predictive claims. Historical replay may use future outcomes solely as replay evidence.
+
+## 9. Metric eligibility
+
+| Mode/metric | Required inputs and calculation | Eligibility |
+|---|---|---|
+| Reported vessel count | Count distinct source rows within named section/scope; no inference of unique lifetime hulls | Available with section and scope label |
+| Plan count | Count reviewed VTS intention rows, not individual pilot/tug markers | Available; seven for audited hash |
+| Coverage | Reviewed/parsed/context/excluded row counts divided by inventoried eligible rows, with separate dispositions | Available; does not measure real-world traffic completeness |
+| Wait age at reference instant | Reference time minus reported anchorage arrival; interval subtraction for bounded times | Assumed-reference estimate only; unavailable as exact current observed wait |
+| Actual waiting/turnaround | Defined actual arrival and inbound/exit endpoints per call; mean uses eligible completed calls | Unavailable now; later show eligibility count and left/right censoring separately |
+| Berth utilization | Confirmed occupied intervals clipped to analysis window / verified berth-hours | Unavailable now; gaps/unknown occupancy cannot count as empty |
+| Tug utilization | Confirmed service intervals / documented available tug-hours | Unavailable now; assignment names alone insufficient |
+| Loading rate/progress/remaining cargo | Verified handling times and loaded/remaining quantity definitions | Unavailable now |
+| Synthetic/model metrics | Existing synthetic inputs, or explicit E1 assumptions; defined window and denominators | Available only in corresponding modeled mode |
+
+Unavailable values display “No disponible,” never zero. No full-call average is inferred by omitting unobserved elapsed portions. Later actual metrics must state endpoint definitions, eligible denominator, excluded reasons, uncertain intervals and censoring counts. Observed and modeled metrics never share an unlabeled denominator.
+
+## 10. Definition of done and next task
+
+The user can select a local reviewed real-data bundle, see report-dated vessels at three illustrative terminal locations and selected anchorage placements, inspect all source context and provenance, and browse a separate planned-milestone timeline. Unknown observation cutoff and future outcomes are visible. Source mode shows only eligible counts/coverage, has no disruption controls, and exports its evidence. Switching back restores the synthetic demo cleanly.
+
+Next task: implement schemas, coverage inventory, normalization and review/assembly commands against the frozen audit PDFs. Then build the renderer-neutral adapters and observation board before milestone playback. Continuous animation, actual historical replay and prediction remain separately gated increments.
