@@ -83,7 +83,7 @@ test('Luna initial fetch shares request cancellation and cannot override a newer
 });
 
 test('remote load-local handler ignores stale failures and aborts its superseded fetch',async()=>{
- const pending=deferred();let signal;const ui=harness(async(input,options)=>{assert.equal(input,'/data/normalized/bahia-2026-10-06.json');signal=options.signal;return pending.promise;});
+ const pending=deferred();let signal;const ui=harness(async(input,options)=>{assert.equal(input,'./data/normalized/bahia-2026-10-06.json');signal=options.signal;return pending.promise;});
  const loading=ui.$('load-local').emit('click');await ui.$('synthetic-mode').emit('click');assert.equal(signal.aborted,true);pending.reject(new Error('remote old failure'));await loading;assert.equal(ui.$('load-status').textContent,'Demostración sintética activa.');
 });
 

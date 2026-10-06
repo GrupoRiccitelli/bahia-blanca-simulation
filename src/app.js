@@ -158,7 +158,7 @@ function switchDataset(){$('speed').value=bundle?'0.1':'2';playing=false;lastFra
  if(bundle){const context=$('source-context');context.replaceChildren(node('h2','Fuentes, inventario completo y revisión'));const board=node('div',null,'observation-board');board.append(node('h3','Posiciones publicadas · hora de observación desconocida'));for(const e of sourceView(bundle).entities){const button=node('button',`${e.name} · ${e.details.terminal} · ${sourceStateLabel(e.state,'board')}`);button.addEventListener('click',()=>select(e.id));board.append(button);}context.append(board);for(const [title,value] of [['Fuentes',bundle.sources],['Inventario completo (incluye contexto fuera del alcance)',bundle.inventory],['Afirmaciones y tiempos originales',bundle.assertions],['Supuestos',bundle.assumptions],['Cuestiones sin resolver',bundle.unresolved_issues],['Revisión',bundle.review]]){const details=node('details');details.append(node('summary',title),node('pre',JSON.stringify(value,null,2)));context.append(details);}context.prepend(node('p',`Informe ${bundle.report_date} · corte de observación desconocido · hash del paquete ${bundle.bundle_hash}`));}
  renderMetrics();renderTimeline();renderFrame();if(bundle)renderMotionControls();}
 $('source-file').addEventListener('change',e=>{const loading=e.target.files[0]?activateSource(e.target.files[0]):undefined;e.target.value='';return loading;});
-$('load-local').addEventListener('click',()=>activateSource('/data/normalized/bahia-2026-10-06.json'));
+$('load-local').addEventListener('click',()=>activateSource('./data/normalized/bahia-2026-10-06.json'));
 $('synthetic-mode').addEventListener('click',()=>{beginDatasetRequest();lunaEnabled=false;updateLunaButton();bundle=null;switchDataset();$('load-status').textContent='Demostración sintética activa.';});
 
 function renderMotionControls(){
@@ -174,7 +174,7 @@ $('animate-source').addEventListener('change',e=>{motionEnabled=e.target.checked
 
 function updateLunaButton(){$('luna-linda').textContent=lunaEnabled?'Quitar Luna Linda (hipotético)':'Agregar Luna Linda (hipotético)';$('luna-linda').setAttribute('aria-pressed',String(lunaEnabled));}
 $('luna-linda').addEventListener('click',async()=>{
- if(!bundle){await activateSource('/data/normalized/bahia-2026-10-06.json',true);return;}
+ if(!bundle){await activateSource('./data/normalized/bahia-2026-10-06.json',true);return;}
  beginDatasetRequest();lunaEnabled=!lunaEnabled;updateLunaButton();selected=lunaEnabled?LUNA_LINDA.id:null;
  refreshBounds();lastFrame=null;renderTimeline();renderFrame();
  $('load-status').textContent=lunaEnabled?'Luna Linda agregada como escala hipotética. No pertenece al informe ni confirma una visita a Bahía Blanca.':'Escala hipotética de Luna Linda eliminada.';
