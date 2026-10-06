@@ -1,12 +1,12 @@
 import {sourceView} from './replay.js';
 import {clampTime} from './view-state.js';
 
-export const MOTION_VERSION = '1.0.0';
+export const MOTION_VERSION = '1.1.0';
 export const MOTION_DURATIONS = Object.freeze({ENTRADA:0.75,ZARPADA:0.5});
 export const MOTION_ASSUMPTIONS = Object.freeze([
   'El origen de la animación usa el inicio de la agenda como referencia asumida; no es el corte de observación del informe.',
   'La hora prevista de remolcadores se usa como inicio ilustrativo de maniobra; no confirma salida ni atraque reales.',
-  'Entrada ilustrativa: 45 minutos. Salida ilustrativa: 30 minutos. Rutas, posiciones y orientación son asumidas.',
+  'Entrada ilustrativa: 45 minutos. Salida ilustrativa: 30 minutos. Rutas, posiciones y orientación son asumidas; la rada ilustrativa se separa del corredor de movimiento.',
   'Vínculos visuales por nombre exacto, terminal y estado compatible; no verifican identidad IMO ni ejecución.',
   'La posición después de la maniobra es un resultado visual supuesto, no una observación actual. No se simulan recursos ni seguridad de navegación.',
 ]);
@@ -26,7 +26,7 @@ export function motionPlan(bundle){
     if(reason){skipped.push({intentionId:intention.id,name:intention.name,reason});continue;}
     const entity=candidates[0],start=(Date.parse(t.earliest)-report.origin)/3600000;
     const dock={x:berthX[intention.terminal],z:38,angle:0};
-    movements.push({intentionId:intention.id,entityId:entity.id,name:entity.name,terminal:intention.terminal,direction:intention.direction,start,end:start+MOTION_DURATIONS[intention.direction],durationHours:MOTION_DURATIONS[intention.direction],startEvidence:'assumed-from-planned-tug-time',bindingEvidence:'assumed-exact-name-terminal-state',from:{...entity.pose},to:intention.direction==='ENTRADA'?dock:{x:1280,z:580,angle:0},status:'illustrative',tugs:[...intention.tugs]});
+    movements.push({intentionId:intention.id,entityId:entity.id,name:entity.name,terminal:intention.terminal,direction:intention.direction,start,end:start+MOTION_DURATIONS[intention.direction],durationHours:MOTION_DURATIONS[intention.direction],startEvidence:'assumed-from-planned-tug-time',bindingEvidence:'assumed-exact-name-terminal-state',from:{...entity.pose},to:intention.direction==='ENTRADA'?dock:{x:2000,z:200,angle:0},status:'illustrative',tugs:[...intention.tugs]});
   }
   return {version:MOTION_VERSION,origin:report.origin,originEvidence:'assumed-agenda-reference',bounds:{start:0,end:Math.max(report.bounds.end,...movements.map(m=>m.end))},movements,skipped,assumptions:[...MOTION_ASSUMPTIONS]};
 }
@@ -35,8 +35,8 @@ export function motionPlan(bundle){
 // directly, with no accumulated frame state and no mutation of source records.
 function routePose(m,f){
   const a=m.from,d=m.to;
-  const b={x:a.x+180,z:a.z+(m.direction==='ENTRADA'?180:0)};
-  const c=m.direction==='ENTRADA'?{x:d.x-200,z:d.z}:{x:a.x+420,z:450};
+  const b=m.direction==='ENTRADA'?{x:a.x,z:200}:{x:a.x+180,z:200};
+  const c=m.direction==='ENTRADA'?{x:d.x,z:200}:{x:1050,z:200};
   const u=1-f;
   const x=u*u*u*a.x+3*u*u*f*b.x+3*u*f*f*c.x+f*f*f*d.x;
   const z=u*u*u*a.z+3*u*u*f*b.z+3*u*f*f*c.z+f*f*f*d.z;

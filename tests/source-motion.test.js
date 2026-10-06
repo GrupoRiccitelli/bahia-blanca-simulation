@@ -38,3 +38,9 @@ test('export separates unchanged bundle from versioned illustrative assumptions'
  assert.equal(out.illustrativeOverlay.sourceBundleHash,b.bundle_hash);assert.equal(out.illustrativeOverlay.time,6.25);assert.equal(out.illustrativeOverlay.assumptions.length,5);
  assert.ok(out.illustrativeOverlay.movements.every(m=>m.status==='illustrative'&&m.startEvidence.startsWith('assumed')));
 });
+
+test('illustrative routes clear the anchored hulls throughout playback',async()=>{
+ const {withLunaLinda}=await import('../src/luna-linda.js');
+ const b=fixture();b.observations.push(...Array.from({length:4},(_,i)=>({id:`anchor-${i}`,name:`Anchor ${i}`,terminal:'TBB 9',state:'reported-anchorage',in_scope:true,length_m:230,beam_m:35})));
+ for(let t=0;t<=6.25;t+=.01){const v=withLunaLinda(sourceMotionView(b,t));const anchors=v.entities.filter(e=>e.id.startsWith('anchor-'));for(const e of v.entities.filter(e=>e.pose&&!anchors.includes(e)))for(const a of anchors)assert.ok(Math.hypot(e.pose.x-a.pose.x,e.pose.z-a.pose.z)>((e.length??229)+(a.length??229))/2+30,`${e.name} crosses ${a.name} at ${t}`);}
+});

@@ -14,9 +14,9 @@ export function createPortScene(container, onSelect) {
   renderer.domElement.setAttribute('aria-label','Puerto 3D: arrastrá para girar y usá la rueda para acercarte');
   container.append(renderer.domElement);
   const controls=new OrbitControls(camera,renderer.domElement);
-  controls.enableDamping=true;controls.dampingFactor=.08;controls.minDistance=180;controls.maxDistance=2600;
+  controls.enableDamping=true;controls.dampingFactor=.08;controls.minDistance=180;controls.maxDistance=4500;
   controls.maxPolarAngle=Math.PI*.47;controls.target.set(80,0,230);
-  const home=()=>{camera.position.set(1000,1050,1480);controls.target.set(80,0,230);controls.update()};home();
+  const home=()=>{camera.position.set(1800,1800,2600);controls.target.set(350,0,550);controls.update()};home();
   scene.add(new THREE.HemisphereLight('#e3f3ff','#7a8174',2.0));
   const sun=new THREE.DirectionalLight('#ffe9c6',3.5);sun.position.set(-600,1000,400);sun.castShadow=true;
   sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-1000;sun.shadow.camera.right=1000;sun.shadow.camera.top=1000;sun.shadow.camera.bottom=-1000;sun.shadow.camera.far=2200;sun.shadow.bias=-.0004;scene.add(sun);
