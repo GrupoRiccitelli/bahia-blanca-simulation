@@ -1,6 +1,6 @@
 # Bahía Blanca Port Simulation
 
-A runnable first demonstration for Grupo Riccitelli. Watch ten illustrative vessel calls use three berths, three tugs and a shared channel over 48 hours, then compare delays and resource outages.
+A static viewer for Grupo Riccitelli with two separate modes: a synthetic 48-hour port demonstration and a locally imported, reviewed published-position report with planned movement markers.
 
 ## Run locally
 
@@ -11,7 +11,7 @@ cd /home/santiago/GrupoRiccitelli/bahia-blanca-simulation
 python3 -m http.server 5180 --bind 127.0.0.1
 ```
 
-Open http://127.0.0.1:5180/ . If Node.js/npm is available, `npm start` runs the same server and `npm test` runs the seven engine checks.
+Open http://127.0.0.1:5180/ . If Node.js/npm is available, `npm start` runs the same server and `npm test` runs the JavaScript engine and presentation/loader checks. `npm run test:data` runs the offline Python pipeline checks.
 
 ## Try the simulation
 
@@ -24,11 +24,24 @@ Open http://127.0.0.1:5180/ . If Node.js/npm is available, `npm start` runs the 
 
 The geographic view is an interactive Three.js 3D scene with modeled bulk carriers, tugs, silos, loading equipment, water, lighting and shadows. Drag to orbit, use the wheel to zoom, and press Restablecer cámara to return. A browser with WebGL support is required. Bahía Blanca and the terminal names ADM, TBB 9 and Cargill are real; vessels, schedules, geometry, durations, resources and operating rules are illustrative assumptions. No current port feed or fleet credentials are used. Time starts at a fixed illustrative 2026-10-06 00:00 Argentina time.
 
-## Real-data work
+## Published positions and planned movements
 
-The real-data audit and next-release plan are in [docs/real-data-implementation-plan.md](docs/real-data-implementation-plan.md). Verified public reports support a reported snapshot and planned movements; completed historical replay is not yet supported by verified history. The current demo remains synthetic.
+Choose the source mode and import a local reviewed JSON bundle. The report board has an unknown observation cutoff. Seeking highlights typed pilot/tug plans without confirming completion or moving reported vessels. Only report counts, plan counts and inventory coverage are available; waiting, utilization and loading progress remain unavailable. Source exports preserve evidence and review metadata. Geography and hull proportions for missing dimensions are illustrative.
 
-Manually acquire frozen official PDFs with `python3 scripts/fetch_sources.py`. This writes timestamped snapshots and SHA-256 manifests under ignored `data/raw/snapshots/`; it does not connect the viewer or run recurring collection. No additional Python packages are required for this fetch step.
+The bundled offline pipeline supports the exact frozen 2026-10-06 audited PDF hashes. Other versions fail for review rather than being silently parsed. Python 3 and Poppler's `pdftotext` are required for normalization; the manual fetcher itself needs only Python's standard library. Run from this project directory:
+
+```bash
+python3 scripts/fetch_sources.py
+python3 scripts/normalize_reports.py --manifest data/raw/audit-2026-10-06/manifest.json --output data/normalized/audit-2026-10-06
+python3 scripts/validate_bundle.py --input data/normalized/audit-2026-10-06 --review scenarios/audit-2026-10-06.review.json
+python3 scripts/assemble_bundle.py --input data/normalized/audit-2026-10-06 --review scenarios/audit-2026-10-06.review.json --output data/normalized/bahia-2026-10-06.json
+```
+
+The fetch command saves a fresh timestamped snapshot under `data/raw/snapshots/`; the commands above deliberately use the retained audited snapshot. For another snapshot, use its manifest path and create a review tied to its hashes. The current parser will block unsupported bytes. Review source rows, scope, aliases, assumptions and unresolved issues before approval. Nonempty overrides and linked intentions are currently rejected; the pipeline does not silently apply or ignore them. Do not edit an approved review in place to represent a new source version.
+
+Import `data/normalized/bahia-2026-10-06.json` through the viewer's local-file control. Raw PDFs, normalized assertions and assembled source bundles remain ignored and local; they are not redistributed in the repository. A file import checks structure and review metadata, not publisher authentication. Missing files, incomplete sources and unsupported schemas produce errors.
+
+Implemented: normalization for the frozen layout, section inventory, validation, deterministic reviewed assembly, neutral synthetic/source adapters, a report board and separate planned-marker timeline. Continuous planned-route animation, completed historical replay, live collection, an assumption-driven real-data what-if engine and calibrated prediction remain deferred. The [implementation plan](docs/real-data-implementation-plan.md) and [audit](docs/real-data-plan-audit.md) explain those evidence gates.
 
 ## How it works
 
@@ -43,9 +56,14 @@ The browser needs no external scripts, tiles, fonts or network feeds. Python ser
 - [Prototype decisions](docs/prototype-decisions.md): the chosen assumptions and exact resource/metric semantics.
 - [Implementation plan](docs/implementation-plan.md): source audit and roadmap toward a calibrated operational model.
 - `src/engine.js`: scheduling and metrics.
-- `src/app.js`: playback, timeline and exports.
+- `src/app.js`: mode selection, playback, timeline and exports.
+- `src/source-data.js`, `src/replay.js`, `src/view-state.js`, `src/synthetic-adapter.js`: bundle loading and separate presentation adapters.
+- `scripts/normalize_reports.py`, `scripts/validate_bundle.py`, `scripts/assemble_bundle.py`: offline evidence pipeline.
+- `schemas/source-bundle.json`: versioned source bundle contract.
 - `src/port3d.js`: 3D models, vessel movement, camera and selection.
 - `vendor/three/`: locally bundled Three.js 0.180.0 and OrbitControls, under the included MIT license.
 - `tests/engine.test.js`: hand-worked timing, deterministic resource checks for all four modes, background traffic, closures and horizon handling.
+- `tests/view-state.test.js`: loader failures, source semantics, null fields, string IDs, metric isolation and deterministic seeks.
+- `tests/test_*.py`: pipeline failure fixtures and deterministic assembly checks.
 
 The first demonstration is implemented. The GitHub repository is https://github.com/GrupoRiccitelli/bahia-blanca-simulation. No cloud deployment is configured.

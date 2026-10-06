@@ -5,9 +5,10 @@
 <header><div class="brand"><span class="brand-icon">≋</span><div><strong>Grupo Riccitelli</strong><span>Laboratorio de operaciones</span></div></div><span class="demo-label">Demostración con datos ilustrativos</span></header>
 <main>
   <section class="intro"><div><h1>Un día en el puerto.<br><span>Y lo que pasa después.</span></h1><p>Bahía Blanca / Ingeniero White · Escenario de 48 horas</p></div><div class="intro-note">Cada buque necesita un muelle libre, paso por el canal y remolcadores disponibles. Cambiá una condición y observá cómo se reorganiza el puerto.</div></section>
+  <section class="dataset-controls" aria-label="Seleccionar datos"><button id="synthetic-mode">Demostración sintética</button><label>Importar paquete revisado <input id="source-file" type="file" accept=".json,application/json"></label><button id="load-local">Cargar paquete local del 06-10-2026</button><p id="load-status" role="status">Demostración sintética activa. Los datos reales requieren un paquete revisado.</p></section>
   <section class="workspace">
     <div class="main-view">
-      <div class="scene-header"><div><h2>Movimiento del puerto</h2><span>Vista 3D · Distribución ilustrativa de terminales</span></div><div class="clock"><strong id="clock">00:00</strong><span id="date">6 oct 2026</span></div></div>
+      <div class="scene-header"><div><h2>Movimiento del puerto</h2><span>Vista 3D · Distribución ilustrativa de terminales</span></div><div class="clock"><small id="plan-clock-label" hidden>Hora del plan</small><strong id="clock">00:00</strong><span id="date">6 oct 2026</span></div></div>
       <div class="scene-wrap"><div id="scene" aria-label="Puerto tridimensional interactivo"></div><div class="camera-tools"><button id="camera-home">Restablecer cámara</button><span>Arrastrá para girar · Rueda para acercar</span></div><div id="scene-activity" class="scene-activity"></div><div class="legend"><span><i class="dot vessel-dot"></i> Buques</span><span><i class="dot tug-dot"></i> Remolcadores</span><span><i class="dot wait-dot"></i> En espera</span></div></div>
       <div class="transport"><button id="play" class="primary">▶ Reproducir</button><button id="reset" aria-label="Volver al inicio">↺</button><label class="speed">Velocidad <select id="speed"><option value="1">1 h / s</option><option value="2" selected>2 h / s</option><option value="4">4 h / s</option></select></label><span id="elapsed">Hora 0 de 48</span></div>
       <label class="scrub-label" for="scrub">Recorrer la simulación</label><input type="range" id="scrub" min="0" max="48" step="0.05" value="0"><div class="ruler"><span>Inicio</span><span>12 h</span><span>24 h</span><span>36 h</span><span>48 h</span></div>
@@ -22,6 +23,7 @@
   </section>
   <section class="results"><div class="section-heading"><div><h2>El efecto sobre la operación</h2><p>Resultados de las 48 horas completas, independientemente del reloj de reproducción.</p></div><span id="comparison-label">Operación normal</span></div><div id="metrics" class="metrics"></div><p id="policy-note" class="policy-note"></p></section>
   <section class="timeline-section"><div class="section-heading"><div><h2>La agenda de cada buque</h2><p>Elegí un buque para seguirlo en el puerto.</p></div><div class="timeline-legend"><span class="waiting-key">Espera</span><span class="transit-key">Maniobra</span><span class="handling-key">Carga</span><span class="departure-key">Espera de salida</span></div></div><div id="timeline" class="timeline"></div></section>
+  <section id="source-context" hidden></section>
   <footer><p>Primera simulación operativa · Terminales ADM, TBB 9 y Cargill · Distribución y rutas ilustrativas en una escena 3D.</p><p>Los resultados muestran el comportamiento del modelo bajo los supuestos elegidos.</p></footer>
 </main><script type="module" src="/src/app.js"></script>
 </body></html>

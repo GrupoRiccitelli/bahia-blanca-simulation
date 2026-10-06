@@ -1,0 +1,10 @@
+import {stateAt} from './engine.js';
+import {clampTime,validSelection} from './view-state.js';
+export function syntheticView(run,time=0,selected=null){
+ const bounds={start:0,end:run.scenario.horizon};time=clampTime(time,bounds);
+ const anchor=id=>({x:650+(id%3)*280,z:240+Math.floor(id/3)*140});
+ function pose(j,t){const state=stateAt(j,t),dock={x:[-560,-230,100][j.berth??j.preferredBerth],z:38};if(['expected','completed'].includes(state))return null;if(state==='waiting')return {...anchor(j.id),angle:0};if(['handling','departure_wait'].includes(state))return {...dock,angle:0};const inbound=state==='inbound',a=inbound?anchor(j.id):dock,b=inbound?dock:{x:1280,z:580},way={x:dock.x+(inbound?200:260),z:inbound?330:380},f=Math.max(0,Math.min(1,(t-(inbound?j.inboundStart:j.outboundStart))/(inbound?j.inboundEnd-j.inboundStart:j.outboundEnd-j.outboundStart))),start=f<.7?a:way,end=f<.7?way:b,u=f<.7?f/.7:(f-.7)/.3;let angle=-Math.atan2(end.z-start.z,end.x-start.x);if(inbound&&f>.85)angle*=1-(f-.85)/.15;return {x:start.x+(end.x-start.x)*u,z:start.z+(end.z-start.z)*u,angle};}
+ const entities=run.jobs.map(j=>({id:String(j.id),name:j.name,length:j.length,beam:null,state:stateAt(j,time),evidence:'simulated',details:j,pose:pose(j,time)}));
+ const tugs=[0,1,2].map(i=>{const duty=run.tugDuties.find(d=>d.tug===i&&time>=d.start&&time<d.end),idle={x:-810+i*45,z:50,angle:0};if(!duty)return idle;const j=run.jobs.find(j=>j.id===duty.vessel),m=run.movements.find(m=>m.vessel===j.id&&m.direction===duty.direction),p=pose(j,Math.min(time,m.end-.0001));if(!p)return idle;let x=p.x-j.length*.3,z=p.z+(i%2?1:-1)*30;if(time>=m.end){const f=Math.min(1,(time-m.end)/.5);x+=(idle.x-x)*f;z+=(idle.z-z)*f;}return {x,z,angle:p.angle};});
+ return {datasetId:`synthetic-${run.scenario.mode??'demo'}`,kind:'synthetic',bounds,time,origin:Date.parse(run.scenario.startsAt),timezone:run.scenario.timezone,entities,selected:validSelection(entities,selected),tugs,closure:!!run.scenario.berthClosure&&time>=run.scenario.berthClosure.start&&time<run.scenario.berthClosure.end,metrics:run.metrics,metricEligibility:['averageWait','completed','berthUtilization','averageTurnaround']};
+}

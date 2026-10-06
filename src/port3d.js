@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { OrbitControls } from '../vendor/three/OrbitControls.js';
-import { stateAt } from './engine.js';
 
 export function createPortScene(container, onSelect) {
   const scene = new THREE.Scene();
@@ -83,8 +82,8 @@ export function createPortScene(container, onSelect) {
   function hull(group,l,w,depth,y,color){const geo=new THREE.ExtrudeGeometry(hullShape(l,w),{depth,bevelEnabled:true,bevelThickness:1.2,bevelSize:1,bevelSegments:1,steps:1,curveSegments:8});const m=new THREE.Mesh(geo,mat(color,.45,.12));m.rotation.x=Math.PI/2;m.position.y=y;m.castShadow=true;m.receiveShadow=true;group.add(m);return m;}
   const ships=new Map();
   function createShip(job){
-    const group=new THREE.Group(),l=job.length,w=l*.145;
-    hull(group,l,w,4,3,'#7d3f35');const upper=hull(group,l,w,8,11,['#243b49','#414d42','#405467'][job.id%3]);
+    const group=new THREE.Group(),l=job.length??170,w=job.beam??l*.145;
+    hull(group,l,w,4,3,'#7d3f35');const upper=hull(group,l,w,8,11,'#243b49');
     box(group,0,11,0,l*.83,1,w*.86,mat('#b9b5a1'));
     for(let i=0;i<5;i++){const x=-l*.2+i*l*.115;box(group,x,13,0,l*.10,3,w*.66,mat('#6c7975'));box(group,x,14.6,0,l*.087,.5,w*.6,mat('#a29f88'));}
     const bx=-l*.35;box(group,bx,17,0,l*.11,10,w*.80,white);box(group,bx+1,25,0,l*.095,7,w*.78,white);
@@ -100,7 +99,7 @@ export function createPortScene(container, onSelect) {
     const ring=new THREE.Mesh(new THREE.RingGeometry(l*.55,l*.56,64),new THREE.MeshBasicMaterial({color:'#f5cd73',side:THREE.DoubleSide,transparent:true,opacity:.8}));ring.rotation.x=-Math.PI/2;ring.position.y=.2;ring.scale.y=.45;group.add(ring);
     group.traverse(o=>{if(o.isMesh)o.userData.vessel=job.id});scene.add(group);
     const el=label(job.name,new THREE.Vector3(),'port-label vessel-label');
-    ships.set(job.id,{group,el,ring,upper});
+    ships.set(job.id,{group,el,ring,upper,dimensions:`${job.length}:${job.beam}`});
   }
   const tugs=[];
   for(let i=0;i<3;i++){
@@ -108,33 +107,24 @@ export function createPortScene(container, onSelect) {
     for(let j=0;j<6;j++){const tire=new THREE.Mesh(new THREE.TorusGeometry(1.6,.65,6,10),darkSteel);tire.position.set(-12+j*4.5,5,6);g.add(tire);}scene.add(g);tugs.push(g);
   }
   const closure=new THREE.Mesh(new THREE.PlaneGeometry(285,38),new THREE.MeshBasicMaterial({color:'#dc7543',transparent:true,opacity:.55,side:THREE.DoubleSide}));closure.rotation.x=-Math.PI/2;closure.position.set(berthX[1],9,-20);closure.visible=false;scene.add(closure);
-  const entry=new THREE.Vector3(1280,0,580);
-  const anchorage=id=>new THREE.Vector3(650+(id%3)*280,0,240+Math.floor(id/3)*140);
-  const berth=job=>new THREE.Vector3(berthX[job.berth??job.preferredBerth],0,38);
-  function pose(job,time){
-    const state=stateAt(job,time),dock=berth(job);
-    if(state==='expected'||state==='completed')return null;
-    if(state==='waiting')return {p:anchorage(job.id),angle:0,state};
-    if(state==='handling'||state==='departure_wait')return {p:dock,angle:0,state};
-    const inbound=state==='inbound',start=inbound?anchorage(job.id):dock,end=inbound?dock:entry;
-    const f=THREE.MathUtils.clamp((time-(inbound?job.inboundStart:job.outboundStart))/(inbound?job.inboundEnd-job.inboundStart:job.outboundEnd-job.outboundStart),0,1);
-    const way=inbound?new THREE.Vector3(dock.x+200,0,330):new THREE.Vector3(dock.x+260,0,380);
-    const p=f<.7?start.clone().lerp(way,f/.7):way.clone().lerp(end,(f-.7)/.3);
-    const a=f<.7?start:way,b=f<.7?way:end;
-    let angle=-Math.atan2(b.z-a.z,b.x-a.x);
-    if(inbound&&f>.85)angle=THREE.MathUtils.lerp(angle,0,(f-.85)/.15);
-    return {p,angle,state};
+  function removeShip(id){
+    const model=ships.get(id);if(!model)return;scene.remove(model.group);
+    const cached=new Set(geometries.values());model.group.traverse(o=>{if(o.geometry&&!cached.has(o.geometry))o.geometry.dispose();if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(![concrete,steel,darkSteel,road,white].includes(m))m.dispose();});
+    const used=new Set();scene.traverse(o=>{if(o.geometry)used.add(o.geometry)});for(const [key,g] of geometries)if(!used.has(g)){g.dispose();geometries.delete(key);}
+    model.el.remove();const index=labels.findIndex(l=>l.el===model.el);if(index>=0)labels.splice(index,1);ships.delete(id);
   }
-  let currentRun=null,currentTime=0,currentSelected=0;
-  function update(run,time,selected){
-    currentRun=run;currentTime=time;currentSelected=selected;
-    for(const job of run.jobs){if(!ships.has(job.id))createShip(job);const model=ships.get(job.id),p=pose(job,time);model.group.visible=!!p;model.el.hidden=!p;if(p){model.group.position.copy(p.p);model.group.rotation.y=p.angle;model.ring.visible=selected===job.id;model.el.textContent=job.name;model.el.classList.toggle('selected',selected===job.id);model.el.dataset.state=p.state;const l=labels.find(l=>l.el===model.el);l.position.copy(p.p).add(new THREE.Vector3(0,50,0));}}
-    for(let i=0;i<3;i++){
-      const duty=run.tugDuties.find(d=>d.tug===i&&time>=d.start&&time<d.end),g=tugs[i];
-      const idle=new THREE.Vector3(-810+i*45,0,50);
-      if(duty){const job=run.jobs.find(j=>j.id===duty.vessel),m=run.movements.find(m=>m.vessel===job.id&&m.direction===duty.direction),p=pose(job,Math.min(time,m.end-.0001));if(p){const f=(time-duty.start)/(duty.end-duty.start);g.position.copy(p.p).add(new THREE.Vector3(-job.length*.3,0,(i%2?1:-1)*30));g.rotation.y=p.angle;if(time>=m.end)g.position.lerp(idle,Math.min(1,(time-m.end)/.5));}else g.position.copy(idle);}else{g.position.copy(idle);g.rotation.y=0;}
+  let dataset=null,lastView=null;
+  function update(view){
+    lastView=view;
+    if(dataset!==view.datasetId){for(const id of [...ships.keys()])removeShip(id);dataset=view.datasetId;}
+    const ids=new Set(view.entities.map(e=>e.id));for(const id of [...ships.keys()])if(!ids.has(id))removeShip(id);
+    for(const entity of view.entities){
+      if(ships.has(entity.id)&&ships.get(entity.id).dimensions!==`${entity.length}:${entity.beam}`)removeShip(entity.id);
+      if(!ships.has(entity.id))createShip(entity);const model=ships.get(entity.id),p=entity.pose;
+      model.group.visible=!!p;model.el.hidden=!p;
+      if(p){model.group.position.set(p.x,0,p.z);model.group.rotation.y=p.angle;model.ring.visible=view.selected===entity.id;model.el.textContent=entity.name;model.el.classList.toggle('selected',view.selected===entity.id);model.el.dataset.state=entity.state;labels.find(l=>l.el===model.el).position.set(p.x,50,p.z);}
     }
-    const c=run.scenario.berthClosure;closure.visible=!!c&&time>=c.start&&time<c.end;
+    tugs.forEach((g,i)=>{const p=view.tugs[i];g.visible=!!p;if(p){g.position.set(p.x,0,p.z);g.rotation.y=p.angle;}});closure.visible=view.closure;
   }
   const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();let down=null;
   renderer.domElement.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY]});
@@ -148,5 +138,6 @@ export function createPortScene(container, onSelect) {
     renderer.render(scene,camera);
   }raf=requestAnimationFrame(frame);
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();container.querySelectorAll('.port-label').forEach(el=>el.hidden=true);container.classList.add('scene-failed');container.dataset.error='La vista 3D perdió la conexión gráfica. Recargá para recuperarla; la agenda sigue disponible.';});
-  return {update,home,dispose(){disposed=true;cancelAnimationFrame(raf);observer.disconnect();controls.dispose();const gs=new Set(),ms=new Set();scene.traverse(o=>{if(o.geometry)gs.add(o.geometry);if(o.material)for(const m of (Array.isArray(o.material)?o.material:[o.material]))ms.add(m)});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());normal.dispose();renderer.dispose();labels.forEach(l=>l.el.remove());renderer.domElement.remove();}};
+  renderer.domElement.addEventListener('webglcontextrestored',()=>{if(disposed)return;container.classList.remove('scene-failed');delete container.dataset.error;for(const {el} of labels)el.hidden=false;if(lastView)update(lastView);resize();});
+  return {update,home,dispose(){disposed=true;cancelAnimationFrame(raf);observer.disconnect();controls.dispose();const gs=new Set(),ms=new Set();scene.traverse(o=>{if(o.geometry)gs.add(o.geometry);if(o.material)for(const m of (Array.isArray(o.material)?o.material:[o.material]))ms.add(m)});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());normal.dispose();renderer.dispose();renderer.forceContextLoss();labels.forEach(l=>l.el.remove());renderer.domElement.remove();}};
 }

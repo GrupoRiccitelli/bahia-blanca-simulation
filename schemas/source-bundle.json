@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/bahia/source-bundle/1.0",
+  "title": "Reviewed published snapshot and movement intentions",
+  "type": "object",
+  "required": ["schema_version", "scenario_kind", "id", "report_date", "sources", "coverage", "observations", "intentions", "assertions", "inventory", "review", "bundle_hash", "metric_eligibility"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "scenario_kind": {"const": "published_snapshot"},
+    "sources": {"type": "array", "minItems": 2, "items": {"type": "object", "required": ["id", "sha256", "status", "retrieved_at"], "properties": {"status": {"const": "verified"}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}}},
+    "coverage": {"type": "object", "required": ["start", "end", "observation_cutoff"], "properties": {"start": {"type": "string", "format": "date-time"}, "end": {"type": "string", "format": "date-time"}, "observation_cutoff": {"type": "null"}}},
+    "observations": {"type": "array", "items": {"type": "object", "required": ["id", "name", "vessel_id", "terminal", "state", "in_scope", "assertion_ids"], "properties": {"state": {"enum": ["reported-alongside", "reported-anchorage"]}, "length_m": {"type": ["number", "null"], "minimum": 0}, "beam_m": {"type": ["number", "null"], "minimum": 0}, "arrival_time": {"anyOf": [{"$ref": "#/$defs/time"}, {"type": "null"}]}}}},
+    "intentions": {"type": "array", "items": {"type": "object", "required": ["id", "name", "direction", "terminal", "pilot_time", "tug_time", "tugs", "assertion_ids"], "properties": {"direction": {"enum": ["ENTRADA", "ZARPADA"]}, "pilot_time": {"$ref": "#/$defs/time"}, "tug_time": {"$ref": "#/$defs/time"}}}},
+    "assertions": {"type": "array", "items": {"type": "object", "required": ["id", "source_id", "source_sha256", "page", "section", "row", "field", "original_text", "parsed_value", "units", "precision", "quality_warnings", "evidence", "status", "event_type"], "properties": {"evidence": {"enum": ["reported", "derived", "assumed", "simulated"]}, "status": {"enum": ["observation", "planned", "confirmed_actual", "unknown"]}}}},
+    "inventory": {"type": "array", "items": {"type": "object", "required": ["id", "source_id", "page", "section", "row", "original_text", "disposition", "review_status"], "properties": {"disposition": {"enum": ["parsed", "retained-unparsed", "excluded-with-reason"]}}}},
+    "bundle_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  },
+  "$defs": {"time": {"type": "object", "required": ["original", "precision", "earliest", "latest", "timezone", "timezone_evidence"], "properties": {"precision": {"enum": ["date", "datetime"]}, "earliest": {"type": "string", "format": "date-time"}, "latest": {"type": "string", "format": "date-time"}, "timezone_evidence": {"enum": ["assumed", "confirmed"]}}}}
+}

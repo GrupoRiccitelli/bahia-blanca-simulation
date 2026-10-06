@@ -1,0 +1,46 @@
+{
+  "version": "1",
+  "status": "approved",
+  "reviewer": "root agent source review",
+  "reviewed_at": "2026-10-06",
+  "parser_version": "1.0.0",
+  "schema_version": "1.0",
+  "manifest": "data/raw/audit-2026-10-06/manifest.json",
+  "source_hashes": {
+    "position": "66c51b93bfd2d16f5921bd2f3e4ddbb3bb69093f2f4e112189201106ab79570a",
+    "vts": "e4acbcc8f666b4fec4551127a9131f87bfb1a1bda71994a6271d76d86d801a3f"
+  },
+  "aliases_version": "1",
+  "aliases": {
+    "Sitio 9 TBB": "TBB 9",
+    "CARGILL": "Cargill",
+    "Otamerica 2": "OTA 2"
+  },
+  "scope": [
+    "ADM",
+    "TBB 9",
+    "Cargill"
+  ],
+  "overrides": [],
+  "linked_intentions": [],
+  "review_method": "Root visually reviewed all three position PDF pages and VTS; selected eight observations and all seven VTS rows checked against extracted text. Other rows retained as context.",
+  "assumptions": [
+    "Zona horaria America/Argentina/Buenos_Aires asumida; semántica del editor no confirmada.",
+    "Geometría ilustrativa; no trayectorias medidas."
+  ],
+  "unresolved_issues": [
+    "Hora de observación del parte diario desconocida; fuentes no atómicas.",
+    "Sin confirmación de movimientos previstos ni duración de servicio.",
+    "Dimensiones redondeadas del parte difieren de VTS; ambas mediciones preservadas.",
+    "AURIGA STAR y OSSA sin fecha; no se heredan fechas.",
+    "AS SILJE: cuatro anuncios distintos y esloras 172/172/173/174; cantidades 200-200 sin conversión a toneladas.",
+    "STIO 2-3/TBB 9 ambiguo; fecha 1/9/2206 conservada sin corregir.",
+    "Reutilización de informes no confirmada; datos locales."
+  ],
+  "normalization_hash": "edeed8ee9557d57f3594abee2e87fa33b42bdceffd8eef2a4181adbf26928165",
+  "toolchain_review": {
+    "python": "3.14.7",
+    "poppler": "pdftotext version 26.08.0"
+  },
+  "reproduction_policy": "Run from project root. Review is pinned to normalized content, including parser/toolchain versions. If normalization hash changes after Python/Poppler upgrades, inspect source rows and regenerate a new reviewed version; do not bypass the hash check."
+}

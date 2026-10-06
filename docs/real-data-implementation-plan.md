@@ -2,6 +2,12 @@
 
 Audit date: 2026-10-06. Revised after [Astra’s audit](real-data-plan-audit.md). Decision: proceed with a source-backed snapshot and planned-movement visualization. A complete historical actual-event replay is not yet supported by the verified public sources. This document supersedes the acquisition and architecture sequence in the original implementation plan for the next release. The existing synthetic demo remains available as a separate scenario.
 
+## Release implementation status · 2026-10-06
+
+A–C are implemented for the frozen audited 2026-10-06 hashes: source contract, normalization and full nonblank-row inventory, approved review validation, deterministic assembly, renderer-neutral adapters, local bundle import, report-dated observations and typed planned-milestone timeline. The normalized bundle contains 19 observations (eight in the detailed scene), seven VTS intentions and 131 inventory rows. Raw and normalized files remain local and ignored. JavaScript and Python checks plus repeat assembly passed; see [verification](verification.md) for actual commands and browser results.
+
+This is a deliberately narrow parser: other source bytes fail closed, and nonempty manual overrides or linked-intention decisions are rejected until implemented. Continuous route animation, live collection, historical actual replay, E1 real-data what-if and E2 calibrated prediction remain deferred. The sections below preserve the product policy, rationale and future acceptance gates; their original “proposed” language describes the planning baseline.
+
 ## 1. What we can honestly build
 
 The first release will show a report-dated observation board with an unknown observation cutoff, real vessel dimensions where available, and a separate timeline of published movement intentions. Continuous route animation is a later increment requiring the explicit assumptions and gates below. It must be titled “Operación publicada + movimientos previstos,” not “historical actual replay.” A separate what-if run can start from that evidence and simulate the unobserved future. Neither view may claim measured loading progress or measured navigation tracks.
@@ -135,7 +141,7 @@ Fixtures must cover undated AURIGA STAR/OSSA, AS SILJE’s four dates and differ
 
 ### Reproducible acquisition to reviewed assembly
 
-The following is the target CLI workflow; only fetch currently exists:
+The following CLI workflow is implemented for the frozen audited source hashes:
 
 ```bash
 python3 scripts/fetch_sources.py
@@ -212,4 +218,4 @@ Unavailable values display “No disponible,” never zero. No full-call average
 
 The user can select a local reviewed real-data bundle, see report-dated vessels at three illustrative terminal locations and selected anchorage placements, inspect all source context and provenance, and browse a separate planned-milestone timeline. Unknown observation cutoff and future outcomes are visible. Source mode shows only eligible counts/coverage, has no disruption controls, and exports its evidence. Switching back restores the synthetic demo cleanly.
 
-Next task: implement schemas, coverage inventory, normalization and review/assembly commands against the frozen audit PDFs. Then build the renderer-neutral adapters and observation board before milestone playback. Continuous animation, actual historical replay and prediction remain separately gated increments.
+A–C now exist for the frozen audited PDFs. Next work is reviewed support for additional report versions and deliberate override/linking semantics, followed by the separately gated increments for continuous animation, actual history and prediction.

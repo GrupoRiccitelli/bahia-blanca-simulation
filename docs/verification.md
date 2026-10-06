@@ -19,3 +19,18 @@ Replaced the schematic with locally bundled Three.js rendering. Browser checks c
 ## Real-data acquisition audit
 
 2026-10-06: `python3 scripts/fetch_sources.py` successfully fetched both official PDF endpoints. Verified saved PDF signatures, byte counts and SHA-256 against the emitted manifest. The script also passed Python compilation and CLI help checks. Raw snapshots remain ignored; the viewer still uses synthetic inputs. Detailed PDF visual review, source coverage and implementation gates are documented in `real-data-implementation-plan.md`.
+
+## Source bundle release checks
+
+2026-10-06:
+
+- `npm test`: both JavaScript test files passed. Direct `node tests/engine.test.js` confirmed seven engine cases; `node tests/view-state.test.js` confirmed 53 loader/adapter cases. These cover missing/malformed bundles, incomplete/duplicate/unknown sources, hashes/review/schema failures, broken references, complete required provenance, unsafe field types, review/source hash mismatches, invalid dispositions, invalid dimensions/time intervals, forbidden metrics, string IDs, missing fields, simultaneous typed plans, deterministic forwards/backwards seeks, dynamic bounds and synthetic/source adapter isolation.
+- `npm run test:data`: four Python pipeline tests passed (failure fixtures and deterministic assembly).
+- Ran normalization, review validation and assembly against the retained audited manifest. Imported the resulting bundle through `loadBundle` in Node and obtained 19 reported observations, eight scene entities, seven plan rows and 131 inventory rows. Coverage is 5.5 hours; plans do not update reported placement.
+- Repeated assembly after the pipeline update and compared exact output bytes with `cmp`; identical hash `71760a6b1237178adb205f92705efc25a5e0e29a41840dd97711ac78bf514def`.
+
+These checks verify the frozen supported input and adapter contract. Browser mode switching, rendering, escaping and downloaded-file behavior require separate browser verification; adapter tests alone do not establish those UI results. New PDF hashes/layouts, nonempty overrides/linked intentions, continuous route animation, actual history and predictive calibration remain outside this implementation.
+
+## Browser integration verification
+
+Loaded the official local bundle through both its convenience button and JSON file chooser. Confirmed eight source scene labels and all seven VTS rows, selected BBG LIJIANG, sought to 08:30 (six simultaneous planned pilot/tug markers highlighted), played/paused and reset the timeline. Source placements retained their report state; synthetic-to-source-to-synthetic switching restored synthetic labels, controls and metrics. An unsupported-schema file displayed an error and preserved the active source dataset. Inspected narrow and desktop layouts; saved `real-data-preview.jpg`. No console errors were reported in the first checks. Repeated browser reloads subsequently caused WebGL context loss; the text board/timeline remained available. Added context restoration and explicit context release during disposal. A fresh final tab rendered correctly; automatic context restoration itself has not been independently triggered and verified. Browser download saving remains unverified; source export payload is covered by adapter tests.
