@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.0",
+  "scenario_kind": "published_snapshot",
+  "id": "constructed-contract",
+  "report_date": "2026-10-06",
+  "coverage": {
+    "start": "2026-10-06T09:30:00Z",
+    "end": "2026-10-06T15:00:00Z",
+    "observation_cutoff": null
+  },
+  "review": {
+    "status": "reviewed",
+    "schema_version": "1.0",
+    "source_hashes": {
+      "position": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "vts": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  },
+  "bundle_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "sources": [
+    {
+      "id": "position",
+      "status": "verified",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "retrieved_at": "2026-10-06T16:22:56Z"
+    },
+    {
+      "id": "vts",
+      "status": "verified",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "retrieved_at": "2026-10-06T16:22:56Z"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "assertion:1",
+      "source_id": "position",
+      "source_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "page": 1,
+      "section": "berths",
+      "row": 1,
+      "field": "name",
+      "original_text": "Constructed evidence only",
+      "parsed_value": "Constructed vessel",
+      "units": null,
+      "precision": null,
+      "quality_warnings": [],
+      "evidence": "reported",
+      "status": "observation",
+      "event_type": null
+    }
+  ],
+  "observations": [
+    {
+      "id": "observation:1",
+      "name": "Constructed vessel",
+      "vessel_id": "hull:1",
+      "terminal": "ADM",
+      "state": "reported-alongside",
+      "in_scope": true,
+      "length_m": 229,
+      "beam_m": null,
+      "arrival_time": null,
+      "assertion_ids": [
+        "assertion:1"
+      ]
+    }
+  ],
+  "intentions": [
+    {
+      "id": "intention:1",
+      "name": "Constructed plan",
+      "terminal": "ADM",
+      "direction": "ENTRADA",
+      "pilot_time": {
+        "original": "06/10/26 06:30",
+        "precision": "datetime",
+        "earliest": "2026-10-06T09:30:00Z",
+        "latest": "2026-10-06T09:30:00Z",
+        "timezone": "America/Argentina/Buenos_Aires",
+        "timezone_evidence": "assumed"
+      },
+      "tug_time": null,
+      "tugs": [],
+      "assertion_ids": []
+    }
+  ],
+  "inventory": [
+    {
+      "id": "inventory:1",
+      "source_id": "position",
+      "page": 1,
+      "section": "berths",
+      "row": 1,
+      "original_text": "Constructed evidence only",
+      "disposition": "parsed",
+      "review_status": "reviewed"
+    }
+  ],
+  "metric_eligibility": {
+    "reported_vessel_count": true,
+    "plan_count": true,
+    "coverage": true,
+    "turnaround": false
+  },
+  "assumptions": [
+    "Illustrative geometry"
+  ],
+  "unresolved_issues": [
+    "Unknown observation cutoff"
+  ]
+}

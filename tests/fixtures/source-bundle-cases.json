@@ -1,0 +1,852 @@
+[
+  {
+    "name": "constructed bundle",
+    "accepted": true,
+    "patches": [],
+    "schemaAccepted": true
+  },
+  {
+    "name": "unknown observation state",
+    "accepted": true,
+    "patches": [
+      {
+        "path": [
+          "observations",
+          "0",
+          "state"
+        ],
+        "value": "unknown"
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "nullable pilot time",
+    "accepted": true,
+    "patches": [
+      {
+        "path": [
+          "intentions",
+          "0",
+          "pilot_time"
+        ],
+        "value": null
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "nullable tug time",
+    "accepted": true,
+    "patches": [
+      {
+        "path": [
+          "intentions",
+          "0",
+          "tug_time"
+        ],
+        "value": null
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "nullable time bounds",
+    "accepted": true,
+    "patches": [
+      {
+        "path": [
+          "intentions",
+          "0",
+          "pilot_time",
+          "earliest"
+        ],
+        "value": null
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "nullable time upper bound",
+    "accepted": true,
+    "patches": [
+      {
+        "path": [
+          "intentions",
+          "0",
+          "pilot_time",
+          "latest"
+        ],
+        "value": null
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "unknown terminal",
+    "accepted": true,
+    "patches": [
+      {
+        "path": [
+          "observations",
+          "0",
+          "terminal"
+        ],
+        "value": null
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "optional dimension absent",
+    "accepted": true,
+    "patches": [
+      {
+        "path": [
+          "observations",
+          "0",
+          "length_m"
+        ],
+        "delete": true
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "structural review metadata only",
+    "accepted": true,
+    "patches": [
+      {
+        "path": [
+          "review"
+        ],
+        "value": {
+          "status": "approved"
+        }
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "additional annotations allowed",
+    "accepted": true,
+    "patches": [
+      {
+        "path": [
+          "annotations"
+        ],
+        "value": {
+          "note": "not an authenticated publisher"
+        }
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "reported unknown assertion",
+    "accepted": true,
+    "patches": [
+      {
+        "path": [
+          "assertions",
+          "0",
+          "status"
+        ],
+        "value": "unknown"
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "excluded row with reason",
+    "accepted": true,
+    "patches": [
+      {
+        "path": [
+          "inventory",
+          "0"
+        ],
+        "value": {
+          "id": "inventory:1",
+          "source_id": "position",
+          "page": 1,
+          "section": "berths",
+          "row": 1,
+          "original_text": "Constructed evidence only",
+          "disposition": "excluded-with-reason",
+          "review_status": "reviewed",
+          "reason": "Constructed exclusion"
+        }
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "source dimension positive fraction",
+    "accepted": true,
+    "patches": [
+      {
+        "path": [
+          "observations",
+          "0",
+          "length_m"
+        ],
+        "value": 0.001
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "reject zero length_m",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "observations",
+          "0",
+          "length_m"
+        ],
+        "value": 0
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject zero beam_m",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "observations",
+          "0",
+          "beam_m"
+        ],
+        "value": 0
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject zero tonnage",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "observations",
+          "0",
+          "tonnage"
+        ],
+        "value": 0
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject derived evidence",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "assertions",
+          "0",
+          "evidence"
+        ],
+        "value": "derived"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject assumed evidence",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "assertions",
+          "0",
+          "evidence"
+        ],
+        "value": "assumed"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject confirmed actual assertion",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "assertions",
+          "0",
+          "status"
+        ],
+        "value": "confirmed_actual"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject missing assumptions",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "assumptions"
+        ],
+        "delete": true
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject missing unresolved issues",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "unresolved_issues"
+        ],
+        "delete": true
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject malformed assumptions",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "assumptions"
+        ],
+        "value": [
+          7
+        ]
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject malformed unresolved issues",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "unresolved_issues"
+        ],
+        "value": {}
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject missing retrieval timestamp",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "sources",
+          "0",
+          "retrieved_at"
+        ],
+        "delete": true
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject unsupported observation state",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "observations",
+          "0",
+          "state"
+        ],
+        "value": "handling"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject invalid observation identity",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "observations",
+          "0",
+          "vessel_id"
+        ],
+        "value": 7
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject numeric dimension string",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "observations",
+          "0",
+          "length_m"
+        ],
+        "value": "229"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject empty source ID",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "sources",
+          "0",
+          "id"
+        ],
+        "value": " "
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject unapproved review",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "review",
+          "status"
+        ],
+        "value": "pending"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject malformed review binding",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "review",
+          "source_hashes"
+        ],
+        "value": null
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject partial review binding",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "review",
+          "source_hashes"
+        ],
+        "value": {
+          "position": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject unsupported review schema",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "review",
+          "schema_version"
+        ],
+        "value": "2.0"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject invalid schema hash",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "schema_hash"
+        ],
+        "value": "invalid"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject published operational metric",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "metric_eligibility",
+          "turnaround"
+        ],
+        "value": true
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject unreviewed inventory",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "inventory",
+          "0",
+          "review_status"
+        ],
+        "value": "pending"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject inventory without exclusion reason",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "inventory",
+          "0",
+          "disposition"
+        ],
+        "value": "excluded-with-reason"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject invalid assertion event type",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "assertions",
+          "0",
+          "event_type"
+        ],
+        "value": "confirmed_arrival"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject invalid original text",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "assertions",
+          "0",
+          "original_text"
+        ],
+        "value": {}
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject invalid warning",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "assertions",
+          "0",
+          "quality_warnings"
+        ],
+        "value": [
+          null
+        ]
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject invalid reference shape",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "observations",
+          "0",
+          "assertion_ids"
+        ],
+        "value": [
+          7
+        ]
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject missing planned time",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "intentions",
+          "0",
+          "pilot_time"
+        ],
+        "delete": true
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject invalid planned time shape",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "intentions",
+          "0",
+          "pilot_time"
+        ],
+        "value": []
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject missing time metadata",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "intentions",
+          "0",
+          "pilot_time",
+          "timezone_evidence"
+        ],
+        "delete": true
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject timestamp without timezone",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "intentions",
+          "0",
+          "pilot_time",
+          "earliest"
+        ],
+        "value": "2026-10-06T09:30:00"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject impossible date",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "report_date"
+        ],
+        "value": "2026-02-30"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject invalid midnight timestamp",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "sources",
+          "0",
+          "retrieved_at"
+        ],
+        "value": "2026-10-06T24:00:00Z"
+      }
+    ],
+    "schemaAccepted": false
+  },
+  {
+    "name": "reject unknown source ID procedurally",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "sources",
+          "1",
+          "id"
+        ],
+        "value": "unexpected"
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "reject mismatched review hash procedurally",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "review",
+          "source_hashes",
+          "vts"
+        ],
+        "value": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "reject broken assertion reference procedurally",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "observations",
+          "0",
+          "assertion_ids"
+        ],
+        "value": [
+          "missing"
+        ]
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "reject reversed coverage procedurally",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "coverage",
+          "end"
+        ],
+        "value": "2026-10-05T09:30:00Z"
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "reject reversed time interval procedurally",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "intentions",
+          "0",
+          "pilot_time",
+          "latest"
+        ],
+        "value": "2026-10-06T08:30:00Z"
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "reject milestone beyond coverage procedurally",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "intentions",
+          "0",
+          "pilot_time",
+          "latest"
+        ],
+        "value": "2026-10-07T09:30:00Z"
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "reject mismatched assertion hash procedurally",
+    "accepted": false,
+    "patches": [
+      {
+        "path": [
+          "assertions",
+          "0",
+          "source_sha256"
+        ],
+        "value": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ],
+    "schemaAccepted": true
+  },
+  {
+    "name": "reject malformed inventory references",
+    "accepted": false,
+    "schemaAccepted": false,
+    "patches": [
+      {
+        "path": [
+          "inventory",
+          "0",
+          "assertion_ids"
+        ],
+        "value": ""
+      }
+    ]
+  },
+  {
+    "name": "reject duplicate observation IDs procedurally",
+    "accepted": false,
+    "schemaAccepted": true,
+    "patches": [
+      {
+        "path": [
+          "observations"
+        ],
+        "value": [
+          {
+            "id": "observation:1",
+            "name": "Constructed vessel",
+            "vessel_id": "hull:1",
+            "terminal": "ADM",
+            "state": "reported-alongside",
+            "in_scope": true,
+            "length_m": 229,
+            "beam_m": null,
+            "arrival_time": null,
+            "assertion_ids": [
+              "assertion:1"
+            ]
+          },
+          {
+            "id": "observation:1",
+            "name": "Constructed vessel",
+            "vessel_id": "hull:1",
+            "terminal": "ADM",
+            "state": "reported-alongside",
+            "in_scope": true,
+            "length_m": 229,
+            "beam_m": null,
+            "arrival_time": null,
+            "assertion_ids": [
+              "assertion:1"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

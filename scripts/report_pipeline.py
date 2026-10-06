@@ -1,11 +1,17 @@
 """Offline, fail-closed normalization of the frozen audited report layout (stdlib + Poppler)."""
 import datetime as dt
 import hashlib
+import importlib.util
 import json
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+# Support both direct CLI imports and test imports through importlib.
+_contract_spec = importlib.util.spec_from_file_location('bundle_contract', Path(__file__).with_name('bundle_contract.py'))
+_contract = importlib.util.module_from_spec(_contract_spec)
+_contract_spec.loader.exec_module(_contract)
 
 VERSION = '1.0.0'
 HASHES = {'position':'66c51b93bfd2d16f5921bd2f3e4ddbb3bb69093f2f4e112189201106ab79570a','vts':'e4acbcc8f666b4fec4551127a9131f87bfb1a1bda71994a6271d76d86d801a3f'}
@@ -115,6 +121,7 @@ def validate(folder,review):
     if any(s['report_date']!=data['report_date'] for s in data['sources']): raise ValueError('Report-date mismatch requires reconciliation')
     if decision.get('overrides') or decision.get('linked_intentions'): raise ValueError('Overrides/links require a supported explicit reconciliation implementation')
     if decision.get('scope') != SCOPE or decision.get('aliases') != ALIASES: raise ValueError('Unsupported reviewed scope or aliases')
+    _contract.validate_records(data, reviewed=False)
     ids={a['id'] for a in data['assertions']}
     if len(ids)!=len(data['assertions']): raise ValueError('Duplicate assertion IDs')
     for row in data['observations']+data['intentions']+data['announcements']:
@@ -124,8 +131,11 @@ def validate(folder,review):
 def assemble(folder,review,output):
     data,decision=validate(folder,review)
     for row in data['inventory']: row['review_status']='reviewed' if row.get('record_id') else 'retained-context-reviewed'
-    times=[i[k]['earliest'] for i in data['intentions'] for k in ('pilot_time','tug_time')]
+    times=[i[k]['earliest'] for i in data['intentions'] for k in ('pilot_time','tug_time') if i[k] is not None and i[k]['earliest'] is not None]
+    if not times: raise ValueError('Cannot infer coverage without known planned milestones')
     data.update(id='bahia-2026-10-06',selected_terminal_scope=SCOPE,coverage={'start':min(times),'end':max(times),'observation_cutoff':None},assumptions=decision['assumptions'],unresolved_issues=decision['unresolved_issues'],review=decision,metric_eligibility={'reported_vessel_count':True,'plan_count':True,'coverage':True,'actual_waiting':False,'turnaround':False,'berth_utilization':False,'tug_utilization':False,'loading_progress':False})
     data['schema_hash']=hashlib.sha256((Path(__file__).resolve().parent.parent/'schemas/source-bundle.json').read_bytes()).hexdigest()
     data['review_hash']=digest(decision)
-    data['bundle_hash']=digest(data); Path(output).parent.mkdir(parents=True,exist_ok=True); Path(output).write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n'); return data
+    data['bundle_hash']=digest(data)
+    _contract.validate_bundle_contract(data)
+    Path(output).parent.mkdir(parents=True,exist_ok=True); Path(output).write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n'); return data

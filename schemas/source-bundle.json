@@ -2,18 +2,740 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://local.invalid/bahia/source-bundle/1.0",
   "title": "Reviewed published snapshot and movement intentions",
+  "$comment": "Validate with format checking enabled. ID uniqueness, mandatory position/vts IDs, reference/hash bindings and interval ordering/coverage require procedural validation. Hash formats are structural metadata, not proof of content integrity or publisher authentication. Additional annotation properties are allowed.",
   "type": "object",
-  "required": ["schema_version", "scenario_kind", "id", "report_date", "sources", "coverage", "observations", "intentions", "assertions", "inventory", "review", "bundle_hash", "metric_eligibility"],
+  "required": [
+    "schema_version",
+    "scenario_kind",
+    "id",
+    "report_date",
+    "sources",
+    "coverage",
+    "observations",
+    "intentions",
+    "assertions",
+    "inventory",
+    "review",
+    "assumptions",
+    "unresolved_issues",
+    "bundle_hash",
+    "metric_eligibility"
+  ],
   "properties": {
-    "schema_version": {"const": "1.0"},
-    "scenario_kind": {"const": "published_snapshot"},
-    "sources": {"type": "array", "minItems": 2, "items": {"type": "object", "required": ["id", "sha256", "status", "retrieved_at"], "properties": {"status": {"const": "verified"}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}}},
-    "coverage": {"type": "object", "required": ["start", "end", "observation_cutoff"], "properties": {"start": {"type": "string", "format": "date-time"}, "end": {"type": "string", "format": "date-time"}, "observation_cutoff": {"type": "null"}}},
-    "observations": {"type": "array", "items": {"type": "object", "required": ["id", "name", "vessel_id", "terminal", "state", "in_scope", "assertion_ids"], "properties": {"state": {"enum": ["reported-alongside", "reported-anchorage"]}, "length_m": {"type": ["number", "null"], "minimum": 0}, "beam_m": {"type": ["number", "null"], "minimum": 0}, "arrival_time": {"anyOf": [{"$ref": "#/$defs/time"}, {"type": "null"}]}}}},
-    "intentions": {"type": "array", "items": {"type": "object", "required": ["id", "name", "direction", "terminal", "pilot_time", "tug_time", "tugs", "assertion_ids"], "properties": {"direction": {"enum": ["ENTRADA", "ZARPADA"]}, "pilot_time": {"$ref": "#/$defs/time"}, "tug_time": {"$ref": "#/$defs/time"}}}},
-    "assertions": {"type": "array", "items": {"type": "object", "required": ["id", "source_id", "source_sha256", "page", "section", "row", "field", "original_text", "parsed_value", "units", "precision", "quality_warnings", "evidence", "status", "event_type"], "properties": {"evidence": {"enum": ["reported", "derived", "assumed", "simulated"]}, "status": {"enum": ["observation", "planned", "confirmed_actual", "unknown"]}}}},
-    "inventory": {"type": "array", "items": {"type": "object", "required": ["id", "source_id", "page", "section", "row", "original_text", "disposition", "review_status"], "properties": {"disposition": {"enum": ["parsed", "retained-unparsed", "excluded-with-reason"]}}}},
-    "bundle_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+    "schema_version": {
+      "const": "1.0"
+    },
+    "scenario_kind": {
+      "const": "published_snapshot"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "report_date": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      },
+      "minItems": 2
+    },
+    "coverage": {
+      "type": "object",
+      "required": [
+        "start",
+        "end",
+        "observation_cutoff"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+        },
+        "observation_cutoff": {
+          "type": "null"
+        }
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/observation"
+      }
+    },
+    "intentions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/intention"
+      }
+    },
+    "assertions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/assertion"
+      }
+    },
+    "inventory": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/inventory"
+      }
+    },
+    "review": {
+      "$ref": "#/$defs/review"
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "unresolved_issues": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "bundle_hash": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "metric_eligibility": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "reported_vessel_count": {
+          "type": "boolean"
+        },
+        "reported_count": {
+          "type": "boolean"
+        },
+        "plan_count": {
+          "type": "boolean"
+        },
+        "coverage": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": {
+        "const": false
+      }
+    },
+    "normalization_hash": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "review_hash": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "schema_hash": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
   },
-  "$defs": {"time": {"type": "object", "required": ["original", "precision", "earliest", "latest", "timezone", "timezone_evidence"], "properties": {"precision": {"enum": ["date", "datetime"]}, "earliest": {"type": "string", "format": "date-time"}, "latest": {"type": "string", "format": "date-time"}, "timezone_evidence": {"enum": ["assumed", "confirmed"]}}}}
+  "$defs": {
+    "time": {
+      "type": "object",
+      "required": [
+        "original",
+        "precision",
+        "earliest",
+        "latest",
+        "timezone",
+        "timezone_evidence"
+      ],
+      "properties": {
+        "original": {
+          "type": "string"
+        },
+        "precision": {
+          "enum": [
+            "date",
+            "datetime"
+          ]
+        },
+        "earliest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "timezone": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "timezone_evidence": {
+          "enum": [
+            "assumed",
+            "confirmed"
+          ]
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "id",
+        "sha256",
+        "status",
+        "retrieved_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "status": {
+          "const": "verified"
+        },
+        "retrieved_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "vessel_id",
+        "terminal",
+        "state",
+        "in_scope",
+        "assertion_ids"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "terminal": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "\\S"
+          }
+        },
+        "length_m": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "beam_m": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "tonnage": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "arrival_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pilot_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tug_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "vessel_id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "in_scope": {
+          "type": "boolean"
+        },
+        "state": {
+          "enum": [
+            "reported-alongside",
+            "reported-anchorage",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "intention": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "direction",
+        "terminal",
+        "pilot_time",
+        "tug_time",
+        "tugs",
+        "assertion_ids"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "terminal": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "\\S"
+          }
+        },
+        "length_m": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "beam_m": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "tonnage": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "arrival_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pilot_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tug_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "direction": {
+          "enum": [
+            "ENTRADA",
+            "ZARPADA"
+          ]
+        },
+        "tugs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "\\S"
+          }
+        }
+      }
+    },
+    "assertion": {
+      "type": "object",
+      "required": [
+        "id",
+        "source_id",
+        "source_sha256",
+        "page",
+        "section",
+        "row",
+        "field",
+        "original_text",
+        "parsed_value",
+        "units",
+        "precision",
+        "quality_warnings",
+        "evidence",
+        "status",
+        "event_type"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "source_id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "section": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "original_text": {
+          "type": "string"
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "field": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "parsed_value": {},
+        "units": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "precision": {
+          "enum": [
+            "date",
+            "datetime",
+            null
+          ]
+        },
+        "quality_warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence": {
+          "const": "reported"
+        },
+        "status": {
+          "enum": [
+            "observation",
+            "planned",
+            "unknown"
+          ]
+        },
+        "event_type": {
+          "enum": [
+            null,
+            "planned_pilot_time",
+            "planned_tug_time",
+            "movement_intention",
+            "narrative_intention",
+            "reported_berth_arrival",
+            "reported_anchorage_arrival"
+          ]
+        }
+      }
+    },
+    "inventory": {
+      "type": "object",
+      "required": [
+        "id",
+        "source_id",
+        "page",
+        "section",
+        "row",
+        "original_text",
+        "disposition",
+        "review_status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "source_id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "section": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "original_text": {
+          "type": "string"
+        },
+        "disposition": {
+          "enum": [
+            "parsed",
+            "retained-unparsed",
+            "excluded-with-reason"
+          ]
+        },
+        "review_status": {
+          "enum": [
+            "reviewed",
+            "retained-context-reviewed",
+            "approved"
+          ]
+        },
+        "assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "\\S"
+          }
+        },
+        "length_m": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "beam_m": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "tonnage": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "arrival_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pilot_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tug_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "disposition": {
+                "const": "excluded-with-reason"
+              }
+            }
+          },
+          "then": {
+            "anyOf": [
+              {
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "pattern": "\\S"
+                  }
+                }
+              },
+              {
+                "required": [
+                  "exclusion_reason"
+                ],
+                "properties": {
+                  "exclusion_reason": {
+                    "type": "string",
+                    "pattern": "\\S"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "review": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "approved",
+            "reviewed"
+          ]
+        },
+        "schema_version": {
+          "enum": [
+            "1.0",
+            null
+          ]
+        },
+        "source_hashes": {
+          "type": "object",
+          "required": [
+            "position",
+            "vts"
+          ],
+          "properties": {
+            "position": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{64}$"
+            },
+            "vts": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{64}$"
+            }
+          }
+        }
+      }
+    }
+  }
 }
