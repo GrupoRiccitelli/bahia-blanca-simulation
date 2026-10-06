@@ -20,14 +20,15 @@ const notes={normal:'Sin cambios en los recursos',delay:'Estuario llega 6 horas 
 let port;
 try { port=createPortScene($('scene'),id=>select(id)); } catch(error) { $('scene').classList.add('scene-failed'); $('scene').textContent='No se pudo iniciar la vista 3D. La agenda y la simulación siguen disponibles.'; console.error(error); }
 $('camera-home').addEventListener('click',()=>port?.home());
-$('modes').innerHTML=Object.entries(MODES).map(([key,label])=>`<button class="mode ${key==='normal'?'active':''}" data-mode="${key}" aria-pressed="${key==='normal'}"><strong>${label}</strong><small>${notes[key]}</small></button>`).join('');
+const modeNames={normal:'Operación normal',delay:'Demora de 6 h',tug:'Un remolcador menos',berth:'TBB 9 cerrado'};
+$('modes').innerHTML=Object.entries(MODES).map(([key,label])=>`<button class="mode ${key==='normal'?'active':''}" data-mode="${key}" aria-label="${label}: ${notes[key]}" title="${notes[key]}" aria-pressed="${key==='normal'}"><strong>${modeNames[key]}</strong><small>${notes[key]}</small></button>`).join('');
 function renderMetrics(){
   if(bundle){renderSourceMetrics();return;}
   const m=run.metrics,b=baseline.metrics;
   const delta=(value,base,unit)=>{const d=value-base;return mode==='normal'?'Referencia para comparar':Math.abs(d)<0.05?'Sin cambio frente a normal':`${d>0?'+':''}${format(d)} ${unit} frente a normal`;};
   $('comparison-label').textContent=MODES[mode];
   $('policy-note').textContent=mode==='normal' ? 'La operación normal sirve de referencia. El orden de despacho sigue una regla simple de prioridad de salida.' : 'Un cambio también puede reducir alguna espera al alterar el orden de despacho. Este modelo usa una regla simple, sin optimizar la agenda. Remolcadores ocupados: '+Math.round(m.tugUtilization*100)+' % del tiempo disponible.';
-  $('metrics').innerHTML=[['Espera media de entrada',`${format(m.averageWait)} h`,delta(m.averageWait,b.averageWait,'h'),m.averageWait>b.averageWait+.05],['Buques completados',`${m.completed} / ${run.jobs.length}`,`${m.unfinished} sin completar al final`,false],['Ocupación de muelles',`${Math.round(m.berthUtilization*100)} %`,delta(m.berthUtilization*100,b.berthUtilization*100,'puntos'),false],['Turnaround medio',`${format(m.averageTurnaround??0)} h`,delta(m.averageTurnaround??0,b.averageTurnaround??0,'h'),(m.averageTurnaround??0)>(b.averageTurnaround??0)+.05]].map(([label,value,note,worse])=>`<div class="metric"><span class="metric-label">${label}</span><strong>${value}</strong><small class="${worse?'worse':''}">${note}</small></div>`).join('');
+  $('metrics').innerHTML=[['Espera de entrada',`${format(m.averageWait)} h`,delta(m.averageWait,b.averageWait,'h'),m.averageWait>b.averageWait+.05],['Buques completados',`${m.completed} / ${run.jobs.length}`,`${m.unfinished} sin completar al final`,false],['Ocupación de muelles',`${Math.round(m.berthUtilization*100)} %`,delta(m.berthUtilization*100,b.berthUtilization*100,'puntos'),false],['Tiempo medio en puerto',`${format(m.averageTurnaround??0)} h`,delta(m.averageTurnaround??0,b.averageTurnaround??0,'h'),(m.averageTurnaround??0)>(b.averageTurnaround??0)+.05]].map(([label,value,note,worse])=>`<div class="metric"><span class="metric-label">${label}</span><strong>${value}</strong><small class="${worse?'worse':''}">${note}</small></div>`).join('');
 }
 function renderTimeline(){
   if(bundle){renderSourceTimeline();return;}
@@ -56,7 +57,7 @@ function select(id){selected=bundle?String(id):Number(id);renderTimeline();rende
 $('modes').addEventListener('click',e=>{const button=e.target.closest('[data-mode]');if(!button)return;beginDatasetRequest();mode=button.dataset.mode;run=simulate(createScenario(mode));playing=false;time=0;lastFrame=null;updatePlay();document.querySelectorAll('[data-mode]').forEach(b=>{b.classList.toggle('active',b.dataset.mode===mode);b.setAttribute('aria-pressed',b.dataset.mode===mode)});renderMetrics();renderTimeline();renderFrame();});
 
 $('timeline').addEventListener('click',e=>{const el=e.target.closest('[data-vessel]');if(el)select(el.dataset.vessel)});
-function updatePlay(){$('play').textContent=playing?'Ⅱ Pausar':bundle?(motionEnabled?'▶ Animar movimientos':'▶ Recorrer hitos'):'▶ Reproducir';$('play').setAttribute('aria-label',playing?'Pausar reproducción':bundle?(motionEnabled?'Animar movimientos ilustrativos':'Recorrer hitos planificados'):'Reproducir simulación')}
+function updatePlay(){$('play').textContent=playing?'Ⅱ Pausar':'▶ Reproducir';$('play').setAttribute('aria-label',playing?'Pausar reproducción':bundle?(motionEnabled?'Animar movimientos ilustrativos':'Recorrer hitos planificados'):'Reproducir simulación')}
 $('play').addEventListener('click',()=>{if(time>=horizon())time=0;playing=!playing;lastFrame=null;updatePlay();renderFrame()});
 $('reset').addEventListener('click',()=>{time=0;playing=false;lastFrame=null;updatePlay();renderFrame()});
 $('scrub').addEventListener('input',e=>{time=Math.max(0,Math.min(horizon(),Number(e.target.value)));lastFrame=null;renderFrame()});
@@ -140,41 +141,42 @@ function renderSelectedSourceDetails(entity,view){
  }else if(movementDetail){movementDetail.label.remove();movementDetail.value.remove();movementDetail=null;}
 }
 const originalLabels=new Map();
-const replacements=[['.demo-label','Paquete histórico de fuentes públicas'],['.intro p','Posiciones publicadas y agenda de intenciones'],['.intro-note','Inspeccioná la evidencia del informe. Los planes no confirman eventos reales.'],['.scene-header h2','Posiciones publicadas · hora de observación desconocida'],['.scrub-label','Recorrer hitos planificados'],['.results h2','Conteos y cobertura de fuentes'],['.results .section-heading p','Conteos de filas publicadas; no métricas de desempeño real.'],['.timeline-section h2','Intenciones y hitos publicados'],['.timeline-section .section-heading p','Prácticos y remolcadores conservan su significado y precisión originales.'],['footer p:first-child','Visor de posiciones e intenciones publicadas · Terminales ADM, TBB 9 y Cargill · Geografía ilustrativa.'],['footer p:last-child','La escena conserva posiciones reportadas, sin inferir resultados de la agenda.']];
+const replacements=[['.demo-label','Informe publicado'],['.intro p','Posiciones publicadas y planes'],['.intro-note','Hora de observación desconocida. Los planes no confirman movimientos reales.'],['.scene-header h2','Posiciones publicadas'],['.scrub-label','Recorrer hitos planificados'],['.results h2','Resumen del informe'],['.results .section-heading p','Conteos publicados, sin métricas operativas'],['.timeline-section h2','Agenda prevista'],['.timeline-section .section-heading p','Horarios publicados de prácticos y remolcadores'],['footer p:first-child','ADM · TBB 9 · Cargill · Geografía ilustrativa'],['footer p:last-child','Planes publicados, sin ejecución confirmada.']];
 for(const [selector] of replacements)originalLabels.set(selector,document.querySelector(selector).textContent);
 function beginDatasetRequest(){loadController?.abort();loadController=new AbortController();return {token:++datasetRequest,signal:loadController.signal};}
-async function activateSource(input,addLuna=false){
+async function activateSource(input){
  const request=beginDatasetRequest();
  try{const next=await loadBundle(input,{signal:request.signal});if(request.token!==datasetRequest)return false;
-  bundle=next;lunaEnabled=addLuna;updateLunaButton();switchDataset();
-  if(addLuna){selected=LUNA_LINDA.id;renderTimeline();renderFrame();}
-  $('load-status').textContent=addLuna?'Luna Linda agregada como escala hipotética. No pertenece al informe ni confirma una visita a Bahía Blanca.':'Paquete local validado estructuralmente. '+next.id;return true;
+  bundle=next;lunaEnabled=false;updateLunaButton();switchDataset();
+  $('load-status').textContent='Informe importado. '+next.id;return true;
  }catch(error){if(request.token===datasetRequest)$('load-status').textContent='Error: '+error.message;return false;}
 }
 function switchDataset(){$('speed').value=bundle?'0.1':'2';playing=false;lastFrame=null;time=0;selected=bundle?null:0;updatePlay();refreshBounds();detailsBundle=null;document.querySelector('.scene-header').classList.toggle('source-header',!!bundle);$('plan-clock-label').hidden=!bundle;
+ document.querySelector('.scene-header > div > span').textContent=bundle?'Hora de observación desconocida':'Distribución ilustrativa';
  for(const [selector,text] of replacements)document.querySelector(selector).textContent=bundle?text:originalLabels.get(selector);
  for(const selector of ['#modes','aside > h2','.aside-intro','aside > details','.timeline-legend','.legend','.ruler'])document.querySelector(selector).hidden=!!bundle;
- $('source-context').hidden=!bundle;$('motion-controls').hidden=!bundle;$('animate-source').checked=motionEnabled;$('export').textContent=bundle?'Descargar evidencia y procedencia':'Descargar escenario y resultados';
+ $('source-context').hidden=!bundle;$('source-context-shell').hidden=!bundle;$('motion-controls').hidden=!bundle;$('animate-source').checked=motionEnabled;$('export').textContent=bundle?'Descargar informe':'Descargar resultados';
  if(bundle){const context=$('source-context');context.replaceChildren(node('h2','Fuentes, inventario completo y revisión'));const board=node('div',null,'observation-board');board.append(node('h3','Posiciones publicadas · hora de observación desconocida'));for(const e of sourceView(bundle).entities){const button=node('button',`${e.name} · ${e.details.terminal} · ${sourceStateLabel(e.state,'board')}`);button.addEventListener('click',()=>select(e.id));board.append(button);}context.append(board);for(const [title,value] of [['Fuentes',bundle.sources],['Inventario completo (incluye contexto fuera del alcance)',bundle.inventory],['Afirmaciones y tiempos originales',bundle.assertions],['Supuestos',bundle.assumptions],['Cuestiones sin resolver',bundle.unresolved_issues],['Revisión',bundle.review]]){const details=node('details');details.append(node('summary',title),node('pre',JSON.stringify(value,null,2)));context.append(details);}context.prepend(node('p',`Informe ${bundle.report_date} · corte de observación desconocido · hash del paquete ${bundle.bundle_hash}`));}
  renderMetrics();renderTimeline();renderFrame();if(bundle)renderMotionControls();}
 $('source-file').addEventListener('change',e=>{const loading=e.target.files[0]?activateSource(e.target.files[0]):undefined;e.target.value='';return loading;});
-$('load-local').addEventListener('click',()=>activateSource('./data/normalized/bahia-2026-10-06.json'));
-$('synthetic-mode').addEventListener('click',()=>{beginDatasetRequest();lunaEnabled=false;updateLunaButton();bundle=null;switchDataset();$('load-status').textContent='Demostración sintética activa.';});
+$('synthetic-mode').addEventListener('click',()=>{beginDatasetRequest();lunaEnabled=false;bundle=null;updateLunaButton();switchDataset();$('load-status').textContent='Demostración sintética activa.';});
 
 function renderMotionControls(){
  const plan=motionPlan(bundle);$('motion-decisions').replaceChildren(...[
  ...plan.movements.map(m=>node('li',`${m.name}: ${m.direction} ilustrativa, ${m.durationHours*60} min; vínculo por nombre/terminal asumido${m.delayHours>0?`; espera visual ${format(m.delayHours*60)} min, sin alterar el horario publicado`:''}.`)),
  ...plan.skipped.map(m=>node('li',`${m.name}: sin animación — ${m.reason}.`))]);
- document.querySelector('.scene-header h2').textContent=motionEnabled?'Movimientos previstos · animación ilustrativa':'Posiciones publicadas · hora de observación desconocida';
+ document.querySelector('.scene-header h2').textContent=motionEnabled?'Movimientos previstos':'Posiciones publicadas';
+ document.querySelector('.scene-header > div > span').textContent=motionEnabled?'Animación ilustrativa · sin ejecución confirmada':'Hora de observación desconocida';
  $('plan-clock-label').textContent=motionEnabled?'Hora ilustrativa':'Hora del plan';
  document.querySelector('footer p:last-child').textContent=motionEnabled?'La animación representa supuestos basados en planes publicados, sin confirmar ejecución.':'La escena conserva posiciones reportadas, sin inferir resultados de la agenda.';
  $('policy-note').textContent=motionEnabled?'Movimiento ilustrativo: hora prevista de remolcadores como referencia; turnos y esperas visuales separan maniobras sin alterar horarios publicados. Entrada 45 min y salida 30 min asumidas. Sin métricas de desempeño real. Zona horaria Argentina asumida.':'El reloj recorre intenciones publicadas. Las posiciones del informe no cambian ni confirman movimientos. Zona horaria Argentina interpretada como supuesto.';
 }
 $('animate-source').addEventListener('change',e=>{motionEnabled=e.target.checked;playing=false;lastFrame=null;refreshBounds();updatePlay();renderMotionControls();renderTimeline();renderFrame();});
 
-function updateLunaButton(){$('luna-linda').textContent=lunaEnabled?'Quitar Luna Linda (hipotético)':'Agregar Luna Linda (hipotético)';$('luna-linda').setAttribute('aria-pressed',String(lunaEnabled));}
+function updateLunaButton(){$('luna-linda').textContent=lunaEnabled?'Quitar Luna Linda (hipotético)':'Agregar Luna Linda (hipotético)';$('luna-linda').setAttribute('aria-pressed',String(lunaEnabled));$('luna-linda').disabled=!bundle;$('luna-requirement').hidden=!!bundle;}
+updateLunaButton();
 $('luna-linda').addEventListener('click',async()=>{
- if(!bundle){await activateSource('./data/normalized/bahia-2026-10-06.json',true);return;}
+ if(!bundle){$('load-status').textContent='Importá un informe JSON para agregar Luna Linda.';return;}
  beginDatasetRequest();lunaEnabled=!lunaEnabled;updateLunaButton();selected=lunaEnabled?LUNA_LINDA.id:null;
  refreshBounds();lastFrame=null;renderTimeline();renderFrame();
  $('load-status').textContent=lunaEnabled?'Luna Linda agregada como escala hipotética. No pertenece al informe ni confirma una visita a Bahía Blanca.':'Escala hipotética de Luna Linda eliminada.';

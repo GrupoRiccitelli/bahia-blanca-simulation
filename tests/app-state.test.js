@@ -76,15 +76,13 @@ test('two overlapping file imports apply the latest choice, including stale erro
  assert.equal(ui.app.getState().bundle.id,'newest');assert.match(ui.$('load-status').textContent,/newest/);
 });
 
-test('Luna initial fetch shares request cancellation and cannot override a newer synthetic choice',async()=>{
- const pending=deferred();let signal;const ui=harness(async(input,options)=>{signal=options.signal;return pending.promise;});
- const loading=ui.$('luna-linda').emit('click');await ui.$('synthetic-mode').emit('click');assert.equal(signal.aborted,true);
- pending.resolve(constructed());await loading;assert.equal(ui.app.getState().bundle,null);assert.equal(ui.app.getState().lunaEnabled,false);assert.equal(ui.$('load-status').textContent,'Demostración sintética activa.');
-});
-
-test('remote load-local handler ignores stale failures and aborts its superseded fetch',async()=>{
- const pending=deferred();let signal;const ui=harness(async(input,options)=>{assert.equal(input,'./data/normalized/bahia-2026-10-06.json');signal=options.signal;return pending.promise;});
- const loading=ui.$('load-local').emit('click');await ui.$('synthetic-mode').emit('click');assert.equal(signal.aborted,true);pending.reject(new Error('remote old failure'));await loading;assert.equal(ui.$('load-status').textContent,'Demostración sintética activa.');
+test('Luna requires imported evidence and never fetches an absent deployment file',async()=>{
+ let loads=0;const ui=harness(async input=>{loads++;return input;});
+ assert.equal(ui.$('luna-linda').disabled,true);
+ await ui.$('luna-linda').emit('click');assert.equal(loads,0);assert.match(ui.$('load-status').textContent,/Importá un informe JSON/);
+ await ui.app.activateSource(constructed());assert.equal(ui.$('luna-linda').disabled,false);assert.equal(ui.$('luna-requirement').hidden,true);
+ await ui.$('luna-linda').emit('click');assert.equal(ui.app.getState().lunaEnabled,true);assert.equal(loads,1);
+ await ui.$('synthetic-mode').emit('click');assert.equal(ui.$('luna-linda').disabled,true);assert.equal(ui.$('luna-requirement').hidden,false);
 });
 
 test('Luna add/remove extends only illustrative playback, clamps slider and preserves evidence coverage',async()=>{
