@@ -2,8 +2,11 @@ import { createPortScene } from './port3d.js';
 import { createScenario, simulate, stateAt, MODES } from './engine.js';
 import {loadBundle} from './source-data.js';
 import {sourceView,sourceExport} from './replay.js';
+import {sourceMotionView,sourceMotionExport,motionPlan} from './source-motion.js';
 import {syntheticView} from './synthetic-adapter.js';
 let bundle=null;
+const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let motionEnabled=!reduceMotion;
 const $ = id => document.getElementById(id);
 let mode='normal',run=simulate(createScenario()),baseline=simulate(createScenario()),time=0,selected=0,playing=false,lastFrame=null;
 const format=n=>n.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1});
@@ -49,14 +52,14 @@ function select(id){selected=bundle?String(id):Number(id);renderTimeline();rende
 $('modes').addEventListener('click',e=>{const button=e.target.closest('[data-mode]');if(!button)return;mode=button.dataset.mode;run=simulate(createScenario(mode));playing=false;time=0;lastFrame=null;updatePlay();document.querySelectorAll('[data-mode]').forEach(b=>{b.classList.toggle('active',b.dataset.mode===mode);b.setAttribute('aria-pressed',b.dataset.mode===mode)});renderMetrics();renderTimeline();renderFrame();});
 
 $('timeline').addEventListener('click',e=>{const el=e.target.closest('[data-vessel]');if(el)select(el.dataset.vessel)});
-function updatePlay(){$('play').textContent=playing?'Ⅱ Pausar':bundle?'▶ Recorrer hitos':'▶ Reproducir';$('play').setAttribute('aria-label',playing?'Pausar reproducción':bundle?'Recorrer hitos planificados':'Reproducir simulación')}
+function updatePlay(){$('play').textContent=playing?'Ⅱ Pausar':bundle?(motionEnabled?'▶ Animar movimientos':'▶ Recorrer hitos'):'▶ Reproducir';$('play').setAttribute('aria-label',playing?'Pausar reproducción':bundle?(motionEnabled?'Animar movimientos ilustrativos':'Recorrer hitos planificados'):'Reproducir simulación')}
 $('play').addEventListener('click',()=>{if(time>=horizon())time=0;playing=!playing;lastFrame=null;updatePlay();renderFrame()});
 $('reset').addEventListener('click',()=>{time=0;playing=false;lastFrame=null;updatePlay();renderFrame()});
 $('scrub').addEventListener('input',e=>{time=Number(e.target.value);lastFrame=null;renderFrame()});
 $('export').addEventListener('click',()=>{
-  const data=bundle?sourceExport(bundle):{format:'bahia-demo-run-v1',evidence:'illustrative assumptions',baseline,selectedRun:run};
+  const data=bundle?(motionEnabled?sourceMotionExport(bundle,time):sourceExport(bundle)):{format:'bahia-demo-run-v1',evidence:'illustrative assumptions',baseline,selectedRun:run};
   const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
-  const a=document.createElement('a');a.href=url;a.download=`bahia-blanca-${mode}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const a=document.createElement('a');a.href=url;a.download=bundle?`bahia-blanca-${motionEnabled?'movimientos-ilustrativos':'evidencia'}.json`:`bahia-blanca-${mode}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 document.addEventListener('visibilitychange',()=>{lastFrame=null});
 function frame(now){if(playing&&!document.hidden){if(lastFrame!==null)time=Math.min(horizon(),time+(now-lastFrame)/1000*Number($('speed').value));lastFrame=now;if(time>=horizon()){playing=false;updatePlay()}renderFrame()}requestAnimationFrame(frame)}
@@ -64,7 +67,8 @@ renderMetrics();renderTimeline();renderFrame();requestAnimationFrame(frame);
 
 window.addEventListener('pagehide',()=>port?.dispose(),{once:true});
 
-function horizon(){return bundle?sourceView(bundle).bounds.end:48;}
+function sourceDisplay(){return motionEnabled?sourceMotionView(bundle,time,selected):sourceView(bundle,time,selected);}
+function horizon(){return bundle?sourceDisplay().bounds.end:48;}
 function node(tag,text,className){const el=document.createElement(tag);if(text!=null)el.textContent=String(text);if(className)el.className=className;return el;}
 function listDetails(items){$('ship-details').replaceChildren(...items.flatMap(([k,v])=>[node('dt',k),node('dd',v??'No disponible')]));}
 function sourceTime(t){return t?.original??'No disponible';}
@@ -76,17 +80,19 @@ function renderSourceMetrics(){
  $('policy-note').textContent='El reloj recorre intenciones publicadas. Las posiciones del informe no cambian ni confirman movimientos. Zona horaria Argentina interpretada como supuesto.';
 }
 function renderSourceTimeline(){
- const view=sourceView(bundle,time,selected);$('timeline').replaceChildren();
+ const view=sourceView(bundle,time,selected),plan=motionEnabled?motionPlan(bundle):null;$('timeline').replaceChildren();
  for(const row of view.timeline){const el=node('div',null,'source-plan-row');el.append(node('strong',row.name),node('span',`${row.details.direction} · ${row.details.terminal}`));
  for(const marker of row.markers){const m=node('span',`${marker.type==='planned_pilot_time'?'Práctico':'Remolcadores'}: ${sourceTime(marker.time)} · planificado`,'plan-marker');m.dataset.at=marker.at??'';m.dataset.end=marker.end??'';el.append(m);}
+ const movement=plan?.movements.find(m=>m.intentionId===row.id);if(movement){const follow=node('button',`Seguir ${row.name}`);follow.addEventListener('click',()=>select(movement.entityId));el.append(follow,node('span',`Animación: ${movement.durationHours*60} min asumidos desde la hora prevista de remolcadores`));}
  el.append(node('span',`Asignaciones publicadas: ${(row.details.tugs??[]).join(', ')||'No disponible'}`));$('timeline').append(el);}
 }
 function renderSourceFrame(){
- const view=sourceView(bundle,time,selected);selected=view.selected;const instant=new Date(view.origin+view.time*3600000);
- $('clock').textContent=instant.toLocaleTimeString('es-AR',{timeZone:view.timezone,hour:'2-digit',minute:'2-digit',hour12:false});$('date').textContent=instant.toLocaleDateString('es-AR',{timeZone:view.timezone});$('elapsed').textContent=`Hitos: ${format(view.time)} / ${format(view.bounds.end)} h`;$('scrub').value=view.time;
- $('scene-activity').textContent=`Posiciones publicadas · ${bundle.report_date} · hora de observación desconocida. Ubicaciones ilustrativas, independientes del reloj.`;port?.update(view);
- const entity=view.entities.find(e=>e.id===selected);$('ship-name').textContent=entity?.name??'Sin posición dentro del alcance';$('ship-state').textContent=entity?.state==='reported-alongside'?'Publicado al costado del muelle (sin estado de carga inferido)':entity?.state==='reported-anchorage'?'Publicado en rada':'Ubicación desconocida';
+ const view=sourceDisplay();selected=view.selected;const instant=new Date(view.origin+view.time*3600000);
+ $('clock').textContent=instant.toLocaleTimeString('es-AR',{timeZone:view.timezone,hour:'2-digit',minute:'2-digit',hour12:false});$('date').textContent=instant.toLocaleDateString('es-AR',{timeZone:view.timezone});$('elapsed').textContent=`${motionEnabled?'Animación':'Hitos'}: ${format(view.time)} / ${format(view.bounds.end)} h`;$('scrub').value=view.time;
+ $('scene-activity').textContent=motionEnabled?'Movimiento ilustrativo según planes · rutas y duraciones asumidas · sin confirmación real':`Posiciones publicadas · ${bundle.report_date} · hora de observación desconocida. Ubicaciones ilustrativas, independientes del reloj.`;port?.update(view);
+ const entity=view.entities.find(e=>e.id===selected);$('ship-name').textContent=entity?.name??'Sin posición dentro del alcance';$('ship-state').textContent=entity?.state?.startsWith('illustrative-')?({'illustrative-entrada':'Entrada ilustrativa · no confirmada','illustrative-zarpada':'Salida ilustrativa · no confirmada','illustrative-alongside':'Al costado supuesto después de entrada','illustrative-offscene':'Fuera de escena tras salida supuesta · posición real desconocida'})[entity.state]:entity?.state==='reported-alongside'?'Publicado al costado del muelle (sin estado de carga inferido)':entity?.state==='reported-anchorage'?'Publicado en rada':'Ubicación desconocida';
  const d=entity?.details??{};listDetails([['Terminal',d.terminal],['Eslora',d.length_m==null?'No disponible · casco genérico ilustrativo':`${d.length_m} m`],['Manga',d.beam_m==null?'No disponible · proporción visual asumida':`${d.beam_m} m`],['Carga',d.cargo],['Tonelaje publicado',d.tonnage],['Llegada publicada',sourceTime(d.arrival_time)],['Procedencia',`Informe ${bundle.report_date} · ${(d.assertion_ids??[]).length} campos documentados; detalle completo en Fuentes y afirmaciones.`]]);
+ if(entity?.movement){const m=entity.movement;listDetails([...Array.from($('ship-details').children).reduce((acc,e,i,els)=>i%2?acc:[...acc,[e.textContent,els[i+1].textContent]],[]),['Movimiento ilustrativo',`${m.direction} · inicio ${new Date(view.origin+m.start*3600000).toLocaleTimeString('es-AR',{timeZone:view.timezone,hour:'2-digit',minute:'2-digit'})} · duración asumida ${m.durationHours*60} min`]]);}
  if(entity){const provenance=node('details',null,'selected-provenance');provenance.append(node('summary','Ver procedencia por campo'));for(const id of d.assertion_ids??[]){const a=bundle.assertions.find(item=>item.id===id);if(a)provenance.append(node('p',`${a.field??a.event_type??id}: ${a.source_id} · página ${a.page??'?'} · fila ${a.row??a.row_reference??'?'}`));}const provenanceRow=node('dd');provenanceRow.append(provenance);$('ship-details').append(node('dt','Detalle de fuentes'),provenanceRow);}
  document.querySelectorAll('.plan-marker').forEach(m=>{const at=m.dataset.at===''?null:Number(m.dataset.at),end=m.dataset.end===''?at:Number(m.dataset.end);m.classList.toggle('highlighted',at!==null&&view.time>=at&&view.time<=(end??at)+.05);});
 }
@@ -94,12 +100,23 @@ const originalLabels=new Map();
 const replacements=[['.demo-label','Paquete histórico de fuentes públicas'],['.intro p','Posiciones publicadas y agenda de intenciones'],['.intro-note','Inspeccioná la evidencia del informe. Los planes no confirman eventos reales.'],['.scene-header h2','Posiciones publicadas · hora de observación desconocida'],['.scrub-label','Recorrer hitos planificados'],['.results h2','Conteos y cobertura de fuentes'],['.results .section-heading p','Conteos de filas publicadas; no métricas de desempeño real.'],['.timeline-section h2','Intenciones y hitos publicados'],['.timeline-section .section-heading p','Prácticos y remolcadores conservan su significado y precisión originales.'],['footer p:first-child','Visor de posiciones e intenciones publicadas · Terminales ADM, TBB 9 y Cargill · Geografía ilustrativa.'],['footer p:last-child','La escena conserva posiciones reportadas, sin inferir resultados de la agenda.']];
 for(const [selector] of replacements)originalLabels.set(selector,document.querySelector(selector).textContent);
 async function activateSource(input){try{const next=await loadBundle(input);bundle=next;switchDataset();$('load-status').textContent='Paquete local validado estructuralmente. '+next.id;}catch(error){$('load-status').textContent='Error: '+error.message;}}
-function switchDataset(){playing=false;lastFrame=null;time=0;selected=bundle?null:0;updatePlay();$('scrub').max=horizon();document.querySelector('.scene-header').classList.toggle('source-header',!!bundle);$('plan-clock-label').hidden=!bundle;
+function switchDataset(){$('speed').value=bundle?'0.1':'2';playing=false;lastFrame=null;time=0;selected=bundle?null:0;updatePlay();$('scrub').max=horizon();document.querySelector('.scene-header').classList.toggle('source-header',!!bundle);$('plan-clock-label').hidden=!bundle;
  for(const [selector,text] of replacements)document.querySelector(selector).textContent=bundle?text:originalLabels.get(selector);
  for(const selector of ['#modes','aside > h2','.aside-intro','aside > details','.timeline-legend','.legend','.ruler'])document.querySelector(selector).hidden=!!bundle;
- $('source-context').hidden=!bundle;$('export').textContent=bundle?'Descargar evidencia y procedencia':'Descargar escenario y resultados';
+ $('source-context').hidden=!bundle;$('motion-controls').hidden=!bundle;$('animate-source').checked=motionEnabled;$('export').textContent=bundle?'Descargar evidencia y procedencia':'Descargar escenario y resultados';
  if(bundle){const context=$('source-context');context.replaceChildren(node('h2','Fuentes, inventario completo y revisión'));const board=node('div',null,'observation-board');board.append(node('h3','Posiciones publicadas · hora de observación desconocida'));for(const e of sourceView(bundle).entities){const button=node('button',`${e.name} · ${e.details.terminal} · ${e.state==='reported-alongside'?'Al costado publicado':'Rada publicada'}`);button.addEventListener('click',()=>select(e.id));board.append(button);}context.append(board);for(const [title,value] of [['Fuentes',bundle.sources],['Inventario completo (incluye contexto fuera del alcance)',bundle.inventory],['Afirmaciones y tiempos originales',bundle.assertions],['Supuestos',bundle.assumptions],['Cuestiones sin resolver',bundle.unresolved_issues],['Revisión',bundle.review]]){const details=node('details');details.append(node('summary',title),node('pre',JSON.stringify(value,null,2)));context.append(details);}context.prepend(node('p',`Informe ${bundle.report_date} · corte de observación desconocido · hash del paquete ${bundle.bundle_hash}`));}
- renderMetrics();renderTimeline();renderFrame();}
+ renderMetrics();renderTimeline();renderFrame();if(bundle)renderMotionControls();}
 $('source-file').addEventListener('change',e=>{if(e.target.files[0])activateSource(e.target.files[0]);e.target.value='';});
 $('load-local').addEventListener('click',()=>activateSource('/data/normalized/bahia-2026-10-06.json'));
 $('synthetic-mode').addEventListener('click',()=>{bundle=null;switchDataset();$('load-status').textContent='Demostración sintética activa.';});
+
+function renderMotionControls(){
+ const plan=motionPlan(bundle);$('motion-decisions').replaceChildren(...[
+ ...plan.movements.map(m=>node('li',`${m.name}: ${m.direction} ilustrativa, ${m.durationHours*60} min; vínculo por nombre/terminal asumido.`)),
+ ...plan.skipped.map(m=>node('li',`${m.name}: sin animación — ${m.reason}.`))]);
+ document.querySelector('.scene-header h2').textContent=motionEnabled?'Movimientos previstos · animación ilustrativa':'Posiciones publicadas · hora de observación desconocida';
+ $('plan-clock-label').textContent=motionEnabled?'Hora ilustrativa':'Hora del plan';
+ document.querySelector('footer p:last-child').textContent=motionEnabled?'La animación representa supuestos basados en planes publicados, sin confirmar ejecución.':'La escena conserva posiciones reportadas, sin inferir resultados de la agenda.';
+ $('policy-note').textContent=motionEnabled?'Movimiento ilustrativo: inicio tomado del horario previsto de remolcadores, entrada 45 min y salida 30 min asumidas. Sin métricas de desempeño real. Zona horaria Argentina asumida.':'El reloj recorre intenciones publicadas. Las posiciones del informe no cambian ni confirman movimientos. Zona horaria Argentina interpretada como supuesto.';
+}
+$('animate-source').addEventListener('change',e=>{motionEnabled=e.target.checked;playing=false;lastFrame=null;time=Math.min(time,horizon());$('scrub').max=horizon();updatePlay();renderMotionControls();renderTimeline();renderFrame();});
