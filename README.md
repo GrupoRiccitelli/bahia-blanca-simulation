@@ -24,6 +24,12 @@ Open http://127.0.0.1:5180/ . If Node.js/npm is available, `npm start` runs the 
 
 The geographic view is an interactive Three.js 3D scene with modeled bulk carriers, tugs, silos, loading equipment, water, lighting and shadows. Drag to orbit, use the wheel to zoom, and press Restablecer cámara to return. A browser with WebGL support is required. Bahía Blanca and the terminal names ADM, TBB 9 and Cargill are real; vessels, schedules, geometry, durations, resources and operating rules are illustrative assumptions. No current port feed or fleet credentials are used. Time starts at a fixed illustrative 2026-10-06 00:00 Argentina time.
 
+## Real-data work
+
+The real-data audit and next-release plan are in [docs/real-data-implementation-plan.md](docs/real-data-implementation-plan.md). Verified public reports support a reported snapshot and planned movements; completed historical replay is not yet supported by verified history. The current demo remains synthetic.
+
+Manually acquire frozen official PDFs with `python3 scripts/fetch_sources.py`. This writes timestamped snapshots and SHA-256 manifests under ignored `data/raw/snapshots/`; it does not connect the viewer or run recurring collection. No additional Python packages are required for this fetch step.
+
 ## How it works
 
 `src/engine.js` runs a deterministic event simulation independently of playback. Departures have priority, larger vessels require two tugs, and resources cannot overlap. Background traffic occupies the channel during explicit windows. Existing handling continues through a berth closure; the closure prevents new inbound assignments. Tug reservations include turnaround and cannot overlap the configured outage.

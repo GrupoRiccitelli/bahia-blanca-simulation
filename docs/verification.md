@@ -15,3 +15,7 @@ The loopback server was started on port 5180. If the session stops, restart with
 ## 3D upgrade
 
 Replaced the schematic with locally bundled Three.js rendering. Browser checks confirmed WebGL rendering of ships, tugs, terminal equipment, water and shadows; hour-5 seeking positioned three vessels alongside and one waiting. Camera zoom and reset worked. Inspected the narrow default panel and desktop breakpoint, with no console errors. The geography and movement paths remain illustrative. Screenshot: `demo-3d-preview.jpg`.
+
+## Real-data acquisition audit
+
+2026-10-06: `python3 scripts/fetch_sources.py` successfully fetched both official PDF endpoints. Verified saved PDF signatures, byte counts and SHA-256 against the emitted manifest. The script also passed Python compilation and CLI help checks. Raw snapshots remain ignored; the viewer still uses synthetic inputs. Detailed PDF visual review, source coverage and implementation gates are documented in `real-data-implementation-plan.md`.

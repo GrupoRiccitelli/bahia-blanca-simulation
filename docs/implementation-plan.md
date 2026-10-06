@@ -5,6 +5,8 @@ Status: first illustrative demonstration implemented; historical calibration and
 
 The user requested a first simulation and authorized choosing ordinary port assumptions. The runnable static demonstration and its chosen rules are documented in [prototype-decisions.md](prototype-decisions.md). That document supersedes the initial architecture and acquisition-first sequence for this demonstration; the broader roadmap below remains for a calibrated model.
 
+The next real-data release is governed by [real-data-implementation-plan.md](real-data-implementation-plan.md), including the 2026-10-06 source audit and actual-history blockers.
+
 ## 1. Objective and first release
 
 Build a reproducible operational what-if simulator for a small part of Bahía Blanca. Answer how vessel delays, berth closures, and tug unavailability change queues, berth occupancy, and resource demand over 24–72 hours.
